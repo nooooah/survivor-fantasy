@@ -574,51 +574,58 @@ export default function SurvivorFantasy() {
                       const score = castawayScores[c.id] || { pts: 0, events: [], eliminated: false };
                       return (
                         <div key={c.id} style={{
-                          padding:"12px 16px", borderBottom:`1px solid rgba(255,255,255,.05)`,
+                          padding:"16px", borderBottom:`1px solid rgba(255,255,255,.05)`,
                           background: score.eliminated?"rgba(239,68,68,.04)":"transparent"
                         }}>
-                          <div style={{display:"flex", alignItems:"center", gap:10}}>
+                          {/* Top section: photo left, info + buttons right */}
+                          <div style={{display:"flex", gap:14, alignItems:"flex-start"}}>
+                            {/* Photo with camera button */}
                             <div style={{position:"relative", flexShrink:0}}>
-                              <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={138} />
+                              <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={72} />
                               <button onClick={() => setPhotoTarget({id:c.id, name:c.name, emoji:c.emoji, tribe:c.tribe})}
-                                title="Upload photo"
+                                title="Set photo"
                                 style={{position:"absolute", bottom:-3, right:-3, background:"#0f0c29",
-                                  border:"1px solid rgba(255,215,0,.4)", borderRadius:"50%", width:18, height:18,
-                                  cursor:"pointer", fontSize:9, color:"#D97706", display:"flex",
+                                  border:"1px solid rgba(255,215,0,.4)", borderRadius:"50%", width:20, height:20,
+                                  cursor:"pointer", fontSize:10, color:"#D97706", display:"flex",
                                   alignItems:"center", justifyContent:"center", padding:0}}>📷</button>
                             </div>
-                            <div style={{flex:1}}>
-                              <div style={{fontWeight:700, fontSize:13, color: score.eliminated?"#666":"#F5E6C8",
-                                textDecoration:score.eliminated?"line-through":"none"}}>
-                                {c.name}
+                            {/* Info + buttons */}
+                            <div style={{flex:1, minWidth:0}}>
+                              <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:4}}>
+                                <div style={{fontWeight:700, fontSize:14, color: score.eliminated?"#666":"#F5E6C8",
+                                  textDecoration:score.eliminated?"line-through":"none"}}>
+                                  {c.name}
+                                </div>
+                                <div style={{fontFamily:"'Cinzel Decorative',serif", fontSize:16, fontWeight:700,
+                                  color: score.pts>0?"#FFD700":score.pts<0?"#ef4444":"#888"}}>
+                                  {score.pts>0?"+":""}{score.pts}
+                                </div>
                               </div>
-                              <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#666", marginTop:1}}>
+                              <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#666", marginBottom:4}}>
                                 {c.seasons}
                               </div>
                               {c.fact && (
-                                <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#8a7a5a", marginTop:4, lineHeight:1.5, fontStyle:"italic"}}>
+                                <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#8a7a5a", lineHeight:1.5, fontStyle:"italic", marginBottom:8}}>
                                   {c.fact}
                                 </div>
                               )}
+                              <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                                <button className="btn" onClick={() => setEventModal(c.id)}
+                                  style={{background:"linear-gradient(135deg,#7C3AED,#5B21B6)", color:"#fff", padding:"6px 12px", fontSize:11}}>
+                                  + Event
+                                </button>
+                                <button className="btn" onClick={() => toggleEliminated(c.id)}
+                                  title={score.eliminated?"Mark Active":"Mark Eliminated"}
+                                  style={{background: score.eliminated?"rgba(34,197,94,.15)":"rgba(239,68,68,.15)",
+                                    color: score.eliminated?"#22c55e":"#ef4444", padding:"6px 10px", fontSize:13, border:"1px solid currentColor"}}>
+                                  {score.eliminated?"♻ Active":"✗ Out"}
+                                </button>
+                              </div>
                             </div>
-                            <div style={{fontFamily:"'Cinzel Decorative',serif", fontSize:18, fontWeight:700,
-                              color: score.pts>0?"#FFD700":score.pts<0?"#ef4444":"#888", minWidth:48, textAlign:"right"}}>
-                              {score.pts>0?"+":""}{score.pts}
-                            </div>
-                            <button className="btn" onClick={() => setEventModal(c.id)}
-                              style={{background:"linear-gradient(135deg,#7C3AED,#5B21B6)", color:"#fff", padding:"6px 14px", fontSize:11}}>
-                              + Event
-                            </button>
-                            <button className="btn" onClick={() => toggleEliminated(c.id)}
-                              title={score.eliminated?"Mark Active":"Mark Eliminated"}
-                              style={{background: score.eliminated?"rgba(34,197,94,.15)":"rgba(239,68,68,.15)",
-                                color: score.eliminated?"#22c55e":"#ef4444", padding:"6px 10px", fontSize:14, border:"1px solid currentColor"}}>
-                              {score.eliminated?"♻":"✗"}
-                            </button>
                           </div>
                           {/* Events log */}
                           {score.events && score.events.length > 0 && (
-                            <div style={{marginTop:10, paddingLeft:34}}>
+                            <div style={{marginTop:10, paddingLeft:86}}>
                               {score.events.map((e, i) => (
                                 <div key={i} style={{
                                   display:"flex", alignItems:"center", gap:8,
@@ -665,33 +672,35 @@ export default function SurvivorFantasy() {
               </div>
             ) : sortedFantasyPlayers.map((p, i) => (
               <div key={p.id} className="card" style={{padding:"18px 20px", marginBottom:12}}>
-                <div style={{display:"flex", alignItems:"center", gap:12}}>
-                  <div style={{fontSize:i<3?22:16, color:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":"#888", width:36, textAlign:"center"}}>
+                {/* Manager header: rank + photo + name + score + remove */}
+                <div style={{display:"flex", alignItems:"center", gap:12, marginBottom:14}}>
+                  <div style={{fontSize:i<3?22:16, color:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":"#888", width:28, textAlign:"center", flexShrink:0}}>
                     {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
                   </div>
                   <div style={{position:"relative", flexShrink:0}}>
-                    <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={144} />
+                    <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={72} />
                     <button onClick={() => setPhotoTarget({id:p.id, name:p.name, emoji:"👤"})}
-                      title="Upload photo"
+                      title="Set photo"
                       style={{position:"absolute", bottom:-3, right:-3, background:"#0f0c29",
-                        border:"1px solid rgba(255,215,0,.4)", borderRadius:"50%", width:18, height:18,
-                        cursor:"pointer", fontSize:9, color:"#D97706", display:"flex",
+                        border:"1px solid rgba(255,215,0,.4)", borderRadius:"50%", width:20, height:20,
+                        cursor:"pointer", fontSize:10, color:"#D97706", display:"flex",
                         alignItems:"center", justifyContent:"center", padding:0}}>📷</button>
                   </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:700, fontSize:16}}>{p.name}</div>
-                    <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginTop:4}}>
-                      Total Score: <span style={{color: p.score>0?"#FFD700":p.score<0?"#ef4444":"#888", fontWeight:700}}>
+                  <div style={{flex:1, minWidth:0}}>
+                    <div style={{fontWeight:700, fontSize:16, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>{p.name}</div>
+                    <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginTop:2}}>
+                      <span style={{color: p.score>0?"#FFD700":p.score<0?"#ef4444":"#888", fontWeight:700}}>
                         {p.score>0?"+":""}{p.score} pts
                       </span>
                     </div>
                   </div>
                   <button className="btn" onClick={() => removeFantasyPlayer(p.id)}
-                    style={{background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"6px 12px", fontSize:11}}>
+                    style={{background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"6px 10px", fontSize:11, flexShrink:0}}>
                     Remove
                   </button>
                 </div>
-                <div style={{marginTop:14, display:"flex", flexWrap:"wrap", gap:8}}>
+                {/* Picks */}
+                <div style={{display:"flex", flexWrap:"wrap", gap:8}}>
                   {p.picks.map(id => {
                     const cast = CAST.find(c=>c.id===id);
                     const sc = castawayScores[id];
@@ -699,11 +708,11 @@ export default function SurvivorFantasy() {
                     return cast ? (
                       <div key={id} style={{
                         background:`${tc.bg}22`, border:`1px solid ${tc.border}55`,
-                        borderRadius:8, padding:"6px 12px", fontFamily:"'Lato',sans-serif", fontSize:12,
-                        display:"flex", alignItems:"center", gap:8
+                        borderRadius:8, padding:"6px 10px", fontFamily:"'Lato',sans-serif", fontSize:12,
+                        display:"flex", alignItems:"center", gap:6
                       }}>
                         <Avatar id={cast.id} name={cast.name} emoji={cast.emoji} tribe={cast.tribe} photos={photos} size={28} />
-                        <span style={{color:"#c4a97a"}}>{cast.name}</span>
+                        <span style={{color:"#c4a97a"}}>{cast.name.split(" ")[0]}</span>
                         <span style={{color: sc?.pts>0?"#FFD700":sc?.pts<0?"#ef4444":"#888", fontWeight:700}}>
                           {sc?.pts>0?"+":""}{sc?.pts||0}
                         </span>
