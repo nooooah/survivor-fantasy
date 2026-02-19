@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, onSnapshot, collection } from "firebase/firestore";
+import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
 
 // ─── FIREBASE ────────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -106,7 +106,10 @@ async function savePlayersToDB(data) {
   try { await setDoc(doc(db, "fantasy", "players"), { list: data }); } catch (e) { console.error(e); }
 }
 async function savePhotoUrlToDB(id, url) {
-  try { await setDoc(doc(db, "photos", id), { url }); } catch (e) { console.error(e); }
+  try {
+    const photosDoc = doc(db, "fantasy", "photos");
+    await setDoc(photosDoc, { [id]: url }, { merge: true });
+  } catch (e) { console.error(e); }
 }
 
 // ─── AVATAR COMPONENT ────────────────────────────────────────────────────────
@@ -250,11 +253,9 @@ export default function SurvivorFantasy() {
       if (snap.exists()) setFantasyPlayers(snap.data().list || []);
     });
 
-    // Load all photos (photos collection — one doc per id)
-    const unsubPhotos = onSnapshot(collection(db, "photos"), (snap) => {
-      const p = {};
-      snap.forEach(d => { p[d.id] = d.data().url; });
-      setPhotos(p);
+    // Load all photos
+    const unsubPhotos = onSnapshot(doc(db, "fantasy", "photos"), (snap) => {
+      if (snap.exists()) setPhotos(snap.data());
     });
 
     return () => { unsubScores(); unsubPlayers(); unsubPhotos(); };
