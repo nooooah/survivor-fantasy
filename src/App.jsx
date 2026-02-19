@@ -87,23 +87,17 @@ const SCORING_SYSTEM = [
 const STORAGE_KEY = "survivor50-fantasy-v1";
 const PLAYERS_KEY = "survivor50-players-v1";
 
-async function loadData() {
-  try {
-    const res = await window.storage.get(STORAGE_KEY);
-    return res ? JSON.parse(res.value) : null;
-  } catch { return null; }
+function loadData() {
+  try { const v = localStorage.getItem(STORAGE_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
 }
-async function saveData(data) {
-  try { await window.storage.set(STORAGE_KEY, JSON.stringify(data)); } catch {}
+function saveData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
-async function loadPlayers() {
-  try {
-    const res = await window.storage.get(PLAYERS_KEY);
-    return res ? JSON.parse(res.value) : null;
-  } catch { return null; }
+function loadPlayers() {
+  try { const v = localStorage.getItem(PLAYERS_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
 }
-async function savePlayers(data) {
-  try { await window.storage.set(PLAYERS_KEY, JSON.stringify(data)); } catch {}
+function savePlayers(data) {
+  try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(data)); } catch {}
 }
 
 // ─── DEFAULT STATE ────────────────────────────────────────────────────────────
@@ -139,14 +133,11 @@ export default function SurvivorFantasy() {
   const [editModal, setEditModal] = useState(null); // {castawayId, eventIdx}
 
   useEffect(() => {
-    (async () => {
-      const [scores, players] = await Promise.all([loadData(), loadPlayers()]);
-      if (scores) {
-        setCastawayScores({ ...defaultCastawayScores(), ...scores });
-      }
-      if (players) setFantasyPlayers(players);
-      setLoading(false);
-    })();
+    const scores = loadData();
+    const players = loadPlayers();
+    if (scores) setCastawayScores({ ...defaultCastawayScores(), ...scores });
+    if (players) setFantasyPlayers(players);
+    setLoading(false);
   }, []);
 
   const showToast = (msg) => {
@@ -154,18 +145,18 @@ export default function SurvivorFantasy() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  const updateScores = useCallback(async (newScores) => {
+  const updateScores = useCallback((newScores) => {
     setCastawayScores(newScores);
-    await saveData(newScores);
+    saveData(newScores);
   }, []);
 
-  const updatePlayers = useCallback(async (newPlayers) => {
+  const updatePlayers = useCallback((newPlayers) => {
     setFantasyPlayers(newPlayers);
-    await savePlayers(newPlayers);
+    savePlayers(newPlayers);
   }, []);
 
   // Add event to castaway
-  const addEvent = async () => {
+  const addEvent = () => {
     if (selectedEvent === null || selectedEvent === undefined || !eventModal) return;
     const evt = SCORING_SYSTEM[selectedEvent];
     const newScores = { ...castawayScores };
@@ -175,50 +166,46 @@ export default function SurvivorFantasy() {
       event: evt.event, pts: evt.pts, icon: evt.icon,
       note: eventNote.trim(), ts: new Date().toISOString()
     }];
-    // auto mark eliminated
-    if (evt.event.includes("Voted Out") || evt.event.includes("Wins Sole Survivor") || evt.event.includes("Makes Final Tribal")) {
-      if (evt.event.includes("Voted Out")) entry.eliminated = true;
-    }
-    await updateScores(newScores);
+    if (evt.event.includes("Voted Out")) entry.eliminated = true;
+    updateScores(newScores);
     setEventModal(null);
     setSelectedEvent(null);
     setEventNote("");
-    showToast(`+${evt.pts > 0 ? "+" : ""}${evt.pts} pts for ${CAST.find(c=>c.id===eventModal).name}`);
+    showToast(`${evt.pts > 0 ? "+" : ""}${evt.pts} pts for ${CAST.find(c=>c.id===eventModal).name}`);
   };
 
-  const removeEvent = async (castawayId, idx) => {
+  const removeEvent = (castawayId, idx) => {
     const newScores = { ...castawayScores };
     const entry = newScores[castawayId];
     const removed = entry.events[idx];
     entry.pts -= removed.pts;
     entry.events = entry.events.filter((_, i) => i !== idx);
-    await updateScores(newScores);
+    updateScores(newScores);
     showToast("Event removed");
   };
 
-  const toggleEliminated = async (castawayId) => {
+  const toggleEliminated = (castawayId) => {
     const newScores = { ...castawayScores };
     newScores[castawayId].eliminated = !newScores[castawayId].eliminated;
-    await updateScores(newScores);
+    updateScores(newScores);
   };
 
-  const addFantasyPlayer = async () => {
+  const addFantasyPlayer = () => {
     if (!newPlayerName.trim() || newPlayerPicks.length === 0) return;
     const player = {
       id: Date.now().toString(),
       name: newPlayerName.trim(),
       picks: newPlayerPicks,
     };
-    const updated = [...fantasyPlayers, player];
-    await updatePlayers(updated);
+    updatePlayers([...fantasyPlayers, player]);
     setNewPlayerName("");
     setNewPlayerPicks([]);
     setPlayerModal(false);
     showToast(`${player.name} joined the fantasy draft!`);
   };
 
-  const removeFantasyPlayer = async (id) => {
-    await updatePlayers(fantasyPlayers.filter(p => p.id !== id));
+  const removeFantasyPlayer = (id) => {
+    updatePlayers(fantasyPlayers.filter(p => p.id !== id));
     showToast("Player removed");
   };
 
@@ -246,11 +233,12 @@ export default function SurvivorFantasy() {
   return (
     <div style={{
       background: "linear-gradient(160deg, #0f0c29 0%, #302b63 50%, #1a0a00 100%)",
-      minHeight: "100vh", fontFamily: "'Cinzel Decorative', 'Cinzel', 'Georgia', serif",
-      color: "#F5E6C8", userSelect: "none"
+      minHeight: "100vh", width: "100%", fontFamily: "'Cinzel Decorative', 'Cinzel', 'Georgia', serif",
+      color: "#F5E6C8", userSelect: "none", margin: 0, padding: 0,
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+        html, body, #root { margin: 0; padding: 0; width: 100%; min-height: 100vh; box-sizing: border-box; }
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #1a0a00; }
         ::-webkit-scrollbar-thumb { background: #B45309; border-radius: 3px; }
