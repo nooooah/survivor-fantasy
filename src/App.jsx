@@ -639,7 +639,7 @@ export default function SurvivorFantasy() {
               <div style={{marginTop:24, padding:16, background:"rgba(255,215,0,.05)", borderRadius:10, border:"1px solid rgba(255,215,0,.15)"}}>
                 <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#D97706", lineHeight:1.8}}>
                   <strong style={{display:"block", marginBottom:8, letterSpacing:2}}>📖 HOW TO PLAY</strong>
-                  1. Each fantasy manager drafts up to <strong>4 castaways</strong> from the full cast.<br/>
+                  1. Each fantasy manager drafts up to <strong>6 castaways</strong> from the full cast.<br/>
                   2. Head to the <strong>Castaways</strong> tab to add events as they happen each episode.<br/>
                   3. Your total fantasy score = the sum of all your picks' points.<br/>
                   4. Track standings in the <strong>Leaderboard</strong> tab in real time.<br/>
@@ -719,7 +719,7 @@ export default function SurvivorFantasy() {
             </div>
             <div style={{marginBottom:20}}>
               <label style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", display:"block", marginBottom:6, letterSpacing:1}}>
-                PICK YOUR CASTAWAYS (up to 4 selected: {newPlayerPicks.length}/4)
+                PICK YOUR CASTAWAYS (up to 6 selected: {newPlayerPicks.length}/6)
               </label>
               <div style={{display:"grid", gap:6, maxHeight:320, overflowY:"auto"}}>
                 {CAST.map(c => {
@@ -729,14 +729,14 @@ export default function SurvivorFantasy() {
                     <div key={c.id}
                       onClick={() => {
                         if (selected) setNewPlayerPicks(p => p.filter(x=>x!==c.id));
-                        else if (newPlayerPicks.length < 4) setNewPlayerPicks(p => [...p, c.id]);
+                        else if (newPlayerPicks.length < 6) setNewPlayerPicks(p => [...p, c.id]);
                       }}
                       style={{
                         padding:"8px 12px", borderRadius:8, cursor:"pointer",
                         border:`1px solid ${selected?tc.border:"rgba(255,255,255,.08)"}`,
                         background: selected?`${tc.bg}33`:"rgba(255,255,255,.02)",
                         display:"flex", alignItems:"center", gap:10, transition:"all .15s",
-                        opacity: !selected && newPlayerPicks.length>=4 ? .4 : 1
+                        opacity: !selected && newPlayerPicks.length>=6 ? .4 : 1
                       }}>
                       <span style={{fontSize:18}}>{c.emoji}</span>
                       <span style={{flex:1, fontFamily:"'Lato',sans-serif", fontSize:13, color: selected?"#F5E6C8":"#888"}}>{c.name}</span>
