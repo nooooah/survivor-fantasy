@@ -578,7 +578,7 @@ export default function SurvivorFantasy() {
                         }}>
                           <div style={{display:"flex", alignItems:"center", gap:10}}>
                             <div style={{position:"relative", flexShrink:0}}>
-                              <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={46} />
+                              <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={138} />
                               <button onClick={() => setPhotoTarget({id:c.id, name:c.name, emoji:c.emoji, tribe:c.tribe})}
                                 title="Upload photo"
                                 style={{position:"absolute", bottom:-3, right:-3, background:"#0f0c29",
@@ -669,7 +669,7 @@ export default function SurvivorFantasy() {
                     {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
                   </div>
                   <div style={{position:"relative", flexShrink:0}}>
-                    <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={48} />
+                    <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={144} />
                     <button onClick={() => setPhotoTarget({id:p.id, name:p.name, emoji:"👤"})}
                       title="Upload photo"
                       style={{position:"absolute", bottom:-3, right:-3, background:"#0f0c29",
