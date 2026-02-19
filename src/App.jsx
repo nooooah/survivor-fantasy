@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
+import { getFirestore, doc, setDoc, onSnapshot, collection } from "firebase/firestore";
 
 // ─── FIREBASE ────────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -105,6 +105,105 @@ async function saveScoresToDB(data) {
 async function savePlayersToDB(data) {
   try { await setDoc(doc(db, "fantasy", "players"), { list: data }); } catch (e) { console.error(e); }
 }
+async function savePhotoUrlToDB(id, url) {
+  try { await setDoc(doc(db, "photos", id), { url }); } catch (e) { console.error(e); }
+}
+
+// ─── AVATAR COMPONENT ────────────────────────────────────────────────────────
+function Avatar({ id, name, emoji, tribe, photos, size = 40, onClick }) {
+  const tc = tribe ? TRIBE_COLORS[tribe] : { bg: "#4B5563", border: "#6B7280" };
+  const url = photos?.[id];
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => { setImgError(false); }, [url]);
+  const showImg = url && !imgError;
+  return (
+    <div onClick={onClick} style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      overflow: "hidden", cursor: onClick ? "pointer" : "default",
+      border: `2px solid ${tc.border}88`,
+      background: showImg ? "transparent" : `linear-gradient(135deg,${tc.bg},${tc.border})`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      {showImg
+        ? <img key={url} src={url} alt={name} onError={() => setImgError(true)}
+            style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top" }} />
+        : <span style={{ fontSize: size * 0.45, lineHeight: 1 }}>{emoji || "👤"}</span>
+      }
+    </div>
+  );
+}
+
+// ─── PHOTO URL MODAL ─────────────────────────────────────────────────────────
+function PhotoUrlModal({ target, photos, onClose, onSaved }) {
+  const tc = target.tribe ? TRIBE_COLORS[target.tribe] : { bg: "#4B5563", border: "#6B7280" };
+  const [url, setUrl] = useState(photos?.[target.id] || "");
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => { setImgError(false); }, [url]);
+  const preview = url.trim();
+
+  const handleSave = async () => {
+    await savePhotoUrlToDB(target.id, preview);
+    onSaved(target.id, preview);
+    onClose();
+  };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+        <h3 style={{ margin:"0 0 16px", fontSize:13, letterSpacing:3, color:"#D97706", textTransform:"uppercase", fontFamily:"'Lato',sans-serif" }}>
+          Set Photo
+        </h3>
+        <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:20 }}>
+          <div style={{
+            width:64, height:64, borderRadius:"50%", overflow:"hidden", flexShrink:0,
+            border:`2px solid ${tc.border}88`,
+            background: (preview && !imgError) ? "transparent" : `linear-gradient(135deg,${tc.bg},${tc.border})`,
+            display:"flex", alignItems:"center", justifyContent:"center"
+          }}>
+            {preview && !imgError
+              ? <img key={preview} src={preview} alt="" onError={() => setImgError(true)}
+                  style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top" }} />
+              : <span style={{ fontSize:30 }}>{target.emoji || "👤"}</span>
+            }
+          </div>
+          <div>
+            <div style={{ fontWeight:700, fontSize:16 }}>{target.name}</div>
+            {target.tribe && <div style={{ fontFamily:"'Lato',sans-serif", fontSize:11, color:"#888", marginTop:2 }}>{target.tribe} Tribe</div>}
+          </div>
+        </div>
+        <div style={{ fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginBottom:8 }}>
+          Paste a direct image URL:
+        </div>
+        <input value={url} onChange={e => setUrl(e.target.value)}
+          placeholder="https://example.com/photo.jpg"
+          style={{ width:"100%", marginBottom:10 }} />
+        <div style={{ fontFamily:"'Lato',sans-serif", fontSize:11, color:"#555", marginBottom:16, lineHeight:1.6 }}>
+          💡 Right-click any image online → "Copy image address", then paste above.
+        </div>
+        <div style={{ display:"flex", gap:10 }}>
+          <button className="btn" onClick={handleSave}
+            style={{ flex:1, background:"linear-gradient(135deg,#B45309,#D97706)", color:"#fff", padding:"12px", fontSize:13 }}>
+            Save ✓
+          </button>
+          {photos?.[target.id] && (
+            <button className="btn" onClick={async () => {
+              await savePhotoUrlToDB(target.id, "");
+              onSaved(target.id, "");
+              onClose();
+            }} style={{ background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"12px 14px", fontSize:12 }}>
+              Remove
+            </button>
+          )}
+          <button className="btn" onClick={onClose}
+            style={{ background:"rgba(255,255,255,.07)", color:"#888", padding:"12px 16px", fontSize:13 }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 // ─── DEFAULT STATE ────────────────────────────────────────────────────────────
 function defaultCastawayScores() {
@@ -122,8 +221,10 @@ export default function SurvivorFantasy() {
   const [tab, setTab] = useState("leaderboard");
   const [castawayScores, setCastawayScores] = useState(defaultCastawayScores());
   const [fantasyPlayers, setFantasyPlayers] = useState(defaultFantasyPlayers());
+  const [photos, setPhotos] = useState({});
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  const [photoTarget, setPhotoTarget] = useState(null); // {id, name, emoji, tribe?}
 
   // Add event modal
   const [eventModal, setEventModal] = useState(null); // {castawayId}
@@ -140,20 +241,23 @@ export default function SurvivorFantasy() {
 
   // ── Real-time Firestore listeners ──
   useEffect(() => {
-    // Listen to scores
     const unsubScores = onSnapshot(doc(db, "fantasy", "scores"), (snap) => {
-      if (snap.exists()) {
-        setCastawayScores({ ...defaultCastawayScores(), ...snap.data() });
-      }
+      if (snap.exists()) setCastawayScores({ ...defaultCastawayScores(), ...snap.data() });
       setLoading(false);
     }, () => setLoading(false));
 
-    // Listen to players
     const unsubPlayers = onSnapshot(doc(db, "fantasy", "players"), (snap) => {
       if (snap.exists()) setFantasyPlayers(snap.data().list || []);
     });
 
-    return () => { unsubScores(); unsubPlayers(); };
+    // Load all photos (photos collection — one doc per id)
+    const unsubPhotos = onSnapshot(collection(db, "photos"), (snap) => {
+      const p = {};
+      snap.forEach(d => { p[d.id] = d.data().url; });
+      setPhotos(p);
+    });
+
+    return () => { unsubScores(); unsubPlayers(); unsubPhotos(); };
   }, []);
 
   const showToast = (msg) => {
@@ -357,7 +461,7 @@ export default function SurvivorFantasy() {
                         color:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":"#666", flexShrink:0}}>
                         {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
                       </div>
-                      <span style={{fontSize:22, flexShrink:0}}>{c.emoji}</span>
+                      <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={36} />
                       <div style={{flex:1, minWidth:0}}>
                         <div style={{fontWeight:700, fontSize:12, color: c.eliminated?"#555":"#F5E6C8",
                           textDecoration: c.eliminated?"line-through":"none",
@@ -410,6 +514,7 @@ export default function SurvivorFantasy() {
                       <div style={{fontSize:i<3?16:11, color:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":"#666", width:24, textAlign:"center", flexShrink:0}}>
                         {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
                       </div>
+                      <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={32} />
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700, fontSize:13}}>{p.name}</div>
                       </div>
@@ -428,7 +533,7 @@ export default function SurvivorFantasy() {
                         return (
                           <div key={id} style={{display:"flex", alignItems:"center", gap:4,
                             fontFamily:"'Lato',sans-serif", fontSize:10, color:"#888"}}>
-                            <span style={{fontSize:16}}>{cast.emoji}</span>
+                            <Avatar id={cast.id} name={cast.name} emoji={cast.emoji} tribe={cast.tribe} photos={photos} size={22} />
                             <span style={{fontSize:11, color:"#c4a97a"}}>{cast.name.split(" ")[0]}</span>
                             <span style={{color: sc.pts>0?"#FFD700":sc.pts<0?"#ef4444":"#666", fontWeight:700}}>
                               {sc.pts>0?"+":""}{sc.pts}
@@ -472,7 +577,15 @@ export default function SurvivorFantasy() {
                           background: score.eliminated?"rgba(239,68,68,.04)":"transparent"
                         }}>
                           <div style={{display:"flex", alignItems:"center", gap:10}}>
-                            <span style={{fontSize:24, flexShrink:0}}>{c.emoji}</span>
+                            <div style={{position:"relative", flexShrink:0}}>
+                              <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={46} />
+                              <button onClick={() => setPhotoTarget({id:c.id, name:c.name, emoji:c.emoji, tribe:c.tribe})}
+                                title="Upload photo"
+                                style={{position:"absolute", bottom:-3, right:-3, background:"#0f0c29",
+                                  border:"1px solid rgba(255,215,0,.4)", borderRadius:"50%", width:18, height:18,
+                                  cursor:"pointer", fontSize:9, color:"#D97706", display:"flex",
+                                  alignItems:"center", justifyContent:"center", padding:0}}>📷</button>
+                            </div>
                             <div style={{flex:1}}>
                               <div style={{fontWeight:700, fontSize:13, color: score.eliminated?"#666":"#F5E6C8",
                                 textDecoration:score.eliminated?"line-through":"none"}}>
@@ -555,6 +668,15 @@ export default function SurvivorFantasy() {
                   <div style={{fontSize:i<3?22:16, color:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":"#888", width:36, textAlign:"center"}}>
                     {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
                   </div>
+                  <div style={{position:"relative", flexShrink:0}}>
+                    <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={48} />
+                    <button onClick={() => setPhotoTarget({id:p.id, name:p.name, emoji:"👤"})}
+                      title="Upload photo"
+                      style={{position:"absolute", bottom:-3, right:-3, background:"#0f0c29",
+                        border:"1px solid rgba(255,215,0,.4)", borderRadius:"50%", width:18, height:18,
+                        cursor:"pointer", fontSize:9, color:"#D97706", display:"flex",
+                        alignItems:"center", justifyContent:"center", padding:0}}>📷</button>
+                  </div>
                   <div style={{flex:1}}>
                     <div style={{fontWeight:700, fontSize:16}}>{p.name}</div>
                     <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginTop:4}}>
@@ -579,10 +701,10 @@ export default function SurvivorFantasy() {
                         borderRadius:8, padding:"6px 12px", fontFamily:"'Lato',sans-serif", fontSize:12,
                         display:"flex", alignItems:"center", gap:8
                       }}>
-                        <span style={{fontSize:18}}>{cast.emoji}</span>
+                        <Avatar id={cast.id} name={cast.name} emoji={cast.emoji} tribe={cast.tribe} photos={photos} size={28} />
                         <span style={{color:"#c4a97a"}}>{cast.name}</span>
-                        <span style={{color: sc.pts>0?"#FFD700":sc.pts<0?"#ef4444":"#888", fontWeight:700}}>
-                          {sc.pts>0?"+":""}{sc.pts}
+                        <span style={{color: sc?.pts>0?"#FFD700":sc?.pts<0?"#ef4444":"#888", fontWeight:700}}>
+                          {sc?.pts>0?"+":""}{sc?.pts||0}
                         </span>
                       </div>
                     ) : null;
@@ -738,7 +860,7 @@ export default function SurvivorFantasy() {
                         display:"flex", alignItems:"center", gap:10, transition:"all .15s",
                         opacity: !selected && newPlayerPicks.length>=6 ? .4 : 1
                       }}>
-                      <span style={{fontSize:18}}>{c.emoji}</span>
+                      <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={32} />
                       <span style={{flex:1, fontFamily:"'Lato',sans-serif", fontSize:13, color: selected?"#F5E6C8":"#888"}}>{c.name}</span>
                       <span className="tag" style={{background:`${tc.bg}44`, color:tc.border, border:`1px solid ${tc.border}44`}}>{c.tribe}</span>
                       {selected && <span style={{color:"#FFD700", fontSize:16}}>✓</span>}
@@ -761,6 +883,16 @@ export default function SurvivorFantasy() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── PHOTO UPLOAD MODAL ── */}
+      {photoTarget && (
+        <PhotoUrlModal
+          target={photoTarget}
+          photos={photos}
+          onClose={() => setPhotoTarget(null)}
+          onSaved={(id, url) => setPhotos(prev => ({ ...prev, [id]: url }))}
+        />
       )}
 
       {/* TOAST */}
