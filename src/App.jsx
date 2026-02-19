@@ -1,32 +1,46 @@
 import { useState, useEffect, useCallback } from "react";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
+
+// ─── FIREBASE ────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBw_D9jsLjTBtVdEyKokDR7MTayFHPlUMc",
+  authDomain: "survivor-fantasy-cf5bd.firebaseapp.com",
+  projectId: "survivor-fantasy-cf5bd",
+  storageBucket: "survivor-fantasy-cf5bd.firebasestorage.app",
+  messagingSenderId: "121170219746",
+  appId: "1:121170219746:web:32207a0f22a17897bd04bb"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 
 // ─── DATA ───────────────────────────────────────────────────────────────────
 // Tribes confirmed: Orange=Cila, Purple=Kalo, Teal=Vatu
 const CAST = [
-  { id: "jenna",     name: "Jenna Lewis-Dougherty",  seasons: "S1, S8",          tribe: "Cila", emoji: "🌺" },
-  { id: "cirie",     name: "Cirie Fields",            seasons: "S12,S16,S20,S34", tribe: "Cila", emoji: "👑" },
-  { id: "ozzy",      name: "Ozzy Lusth",              seasons: "S13,S16,S23,S34", tribe: "Cila", emoji: "🌊" },
-  { id: "christian", name: "Christian Hubicki",       seasons: "S37",             tribe: "Cila", emoji: "🤓" },
-  { id: "rick",      name: "Rick Devens",             seasons: "S38",             tribe: "Cila", emoji: "📺" },
-  { id: "emily",     name: "Emily Flippen",           seasons: "S45",             tribe: "Cila", emoji: "📈" },
-  { id: "savannah",  name: "Savannah Louie",          seasons: "S49 (Winner)",    tribe: "Cila", emoji: "⭐" },
-  { id: "joe",       name: "Joe Hunter",              seasons: "S48",             tribe: "Cila", emoji: "🦅" },
-  { id: "colby",     name: "Colby Donaldson",         seasons: "S2, S8, S20",     tribe: "Kalo", emoji: "🤠" },
-  { id: "stephenie", name: "Stephenie LaGrossa",      seasons: "S10, S11, S20",   tribe: "Kalo", emoji: "💪" },
-  { id: "aubry",     name: "Aubry Bracco",            seasons: "S32, S34, S38",   tribe: "Kalo", emoji: "🦋" },
-  { id: "angelina",  name: "Angelina Keeley",         seasons: "S37",             tribe: "Kalo", emoji: "✈️" },
-  { id: "q",         name: "Q Burdette",              seasons: "S46",             tribe: "Kalo", emoji: "⚡" },
-  { id: "kyle",      name: "Kyle Fraser",             seasons: "S48 (Winner)",    tribe: "Kalo", emoji: "🥊" },
-  { id: "rizo",      name: "Rizo Velovic",            seasons: "S49",             tribe: "Kalo", emoji: "🎯" },
-  { id: "genevieve", name: "Genevieve Mushaluk",      seasons: "S47",             tribe: "Kalo", emoji: "🌿" },
-  { id: "charlie",   name: "Charlie Davis",           seasons: "S46",             tribe: "Vatu", emoji: "🎭" },
-  { id: "coach",     name: "Coach Wade",              seasons: "S18, S20, S23",   tribe: "Vatu", emoji: "🐉" },
-  { id: "jonathan",  name: "Jonathan Young",          seasons: "S42",             tribe: "Vatu", emoji: "🦁" },
-  { id: "mike",      name: "Mike White",              seasons: "S37",             tribe: "Vatu", emoji: "🎬" },
-  { id: "chrissy",   name: "Chrissy Hofbeck",         seasons: "S35",             tribe: "Vatu", emoji: "🧮" },
-  { id: "dee",       name: "Dee Valladares",          seasons: "S45 (Winner)",    tribe: "Vatu", emoji: "🏆" },
-  { id: "kamilla",   name: "Kamilla Karthigesu",      seasons: "S44, S48",        tribe: "Vatu", emoji: "💼" },
-  { id: "tiffany",   name: "Tiffany Ervin",           seasons: "S46",             tribe: "Vatu", emoji: "🔥" },
+  { id: "christian", name: "Christian Hubicki",       seasons: "S37",             tribe: "Cila", emoji: "🤓", fact: "PhD roboticist who solved puzzles faster than anyone in S37 history." },
+  { id: "cirie",     name: "Cirie Fields",            seasons: "S12,S16,S20,S34", tribe: "Cila", emoji: "👑", fact: "Never won an individual immunity challenge in 4 seasons — yet made it deep every time purely on social mastery." },
+  { id: "emily",     name: "Emily Flippen",           seasons: "S45",             tribe: "Cila", emoji: "📈", fact: "Started as the most disliked player on her tribe and pulled off one of the best redemption arcs ever." },
+  { id: "jenna",     name: "Jenna Lewis-Dougherty",  seasons: "S1, S8",          tribe: "Cila", emoji: "🌺", fact: "One of the original Borneo castaways — was on the very first season of Survivor ever aired." },
+  { id: "joe",       name: "Joe Hunter",              seasons: "S48",             tribe: "Cila", emoji: "🦅", fact: "A firefighter whose social game kept him safe deep into S48 despite being a physical threat." },
+  { id: "ozzy",      name: "Ozzy Lusth",              seasons: "S13,S16,S23,S34", tribe: "Cila", emoji: "🌊", fact: "Holds the record for most individual immunity wins in a single season (5) and is considered the greatest challenge beast ever." },
+  { id: "rick",      name: "Rick Devens",             seasons: "S38",             tribe: "Cila", emoji: "📺", fact: "Was voted out, came back from Edge of Extinction, found 2 idols, and nearly won — all while being a local news anchor." },
+  { id: "savannah",  name: "Savannah Louie",          seasons: "S49 (Winner)",    tribe: "Cila", emoji: "⭐", fact: "Won S49 without ever receiving a vote at Tribal Council the entire game." },
+  { id: "angelina",  name: "Angelina Keeley",         seasons: "S37",             tribe: "Kalo", emoji: "✈️", fact: "Famously negotiated her way into a jacket at Tribal Council — and made a fake idol out of a napkin." },
+  { id: "aubry",     name: "Aubry Bracco",            seasons: "S32, S34, S38",   tribe: "Kalo", emoji: "🦋", fact: "Lost Kaoh Rong by one jury vote after Michele flipped — one of the most debated finales ever." },
+  { id: "colby",     name: "Colby Donaldson",         seasons: "S2, S8, S20",     tribe: "Kalo", emoji: "🤠", fact: "Infamously took Tina to the finals instead of Keith in S2, costing himself the million dollars." },
+  { id: "genevieve", name: "Genevieve Mushaluk",      seasons: "S47",             tribe: "Kalo", emoji: "🌿", fact: "A corporate lawyer who dominated strategically and won S47 in a near-unanimous jury vote." },
+  { id: "kyle",      name: "Kyle Fraser",             seasons: "S48 (Winner)",    tribe: "Kalo", emoji: "🥊", fact: "Won S48 after successfully navigating a tribe that kept losing immunity — the ultimate underdog winner." },
+  { id: "q",         name: "Q Burdette",              seasons: "S46",             tribe: "Kalo", emoji: "⚡", fact: "Caused chaos in S46 by openly asking to be voted out at Tribal Council — then changed his mind mid-vote." },
+  { id: "rizo",      name: "Rizo Velovic",            seasons: "S49",             tribe: "Kalo", emoji: "🎯", fact: "Played a quietly devastating strategic game in S49, orchestrating multiple blindsides without getting any blood on his hands." },
+  { id: "stephenie", name: "Stephenie LaGrossa",      seasons: "S10, S11, S20",   tribe: "Kalo", emoji: "💪", fact: "Sole survivor of the Ulong tribe in Palau — the only tribe in history to lose every single immunity challenge." },
+  { id: "charlie",   name: "Charlie Davis",           seasons: "S46",             tribe: "Vatu", emoji: "🎭", fact: "A law student who lost the S46 finale by one jury vote after being blindsided by Q's unpredictable game." },
+  { id: "chrissy",   name: "Chrissy Hofbeck",         seasons: "S35",             tribe: "Vatu", emoji: "🧮", fact: "An actuary who used math and probability to calculate her way to the final 3 in Heroes vs. Healers vs. Hustlers." },
+  { id: "coach",     name: "Coach Wade",              seasons: "S18, S20, S23",   tribe: "Vatu", emoji: "🐉", fact: "Self-proclaimed 'Dragon Slayer' who built a cult-like alliance in South Pacific and nearly won with it." },
+  { id: "dee",       name: "Dee Valladares",          seasons: "S45 (Winner)",    tribe: "Vatu", emoji: "🏆", fact: "Won S45 by masterfully playing both sides of the merge while her closest ally Austin had no idea she was against him." },
+  { id: "jonathan",  name: "Jonathan Young",          seasons: "S42",             tribe: "Vatu", emoji: "🦁", fact: "Single-handedly dragged a boat to shore in S42, cementing himself as one of the most physically dominant players ever." },
+  { id: "kamilla",   name: "Kamilla Karthigesu",      seasons: "S44, S48",        tribe: "Vatu", emoji: "💼", fact: "Returned for S48 after a breakout S44 debut — one of only a few players to compete on back-to-back modern seasons." },
+  { id: "mike",      name: "Mike White",              seasons: "S37",             tribe: "Vatu", emoji: "🎬", fact: "The writer/director of 'School of Rock' and 'The White Lotus' — and a legitimately great Survivor strategist." },
+  { id: "tiffany",   name: "Tiffany Ervin",           seasons: "S46",             tribe: "Vatu", emoji: "🔥", fact: "Survived being on the wrong side of nearly every vote in S46 through sheer social charm and idol luck." },
 ];
 
 const TRIBE_COLORS = {
@@ -84,20 +98,12 @@ const SCORING_SYSTEM = [
   { category: "Endgame", event: "SOLE SURVIVOR",                                pts: 20,  icon: "🥥" },
 ];
 
-const STORAGE_KEY = "survivor50-fantasy-v1";
-const PLAYERS_KEY = "survivor50-players-v1";
-
-function loadData() {
-  try { const v = localStorage.getItem(STORAGE_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
+// ─── FIRESTORE HELPERS ───────────────────────────────────────────────────────
+async function saveScoresToDB(data) {
+  try { await setDoc(doc(db, "fantasy", "scores"), data); } catch (e) { console.error(e); }
 }
-function saveData(data) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
-}
-function loadPlayers() {
-  try { const v = localStorage.getItem(PLAYERS_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
-}
-function savePlayers(data) {
-  try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(data)); } catch {}
+async function savePlayersToDB(data) {
+  try { await setDoc(doc(db, "fantasy", "players"), { list: data }); } catch (e) { console.error(e); }
 }
 
 // ─── DEFAULT STATE ────────────────────────────────────────────────────────────
@@ -132,12 +138,22 @@ export default function SurvivorFantasy() {
   // Edit score modal
   const [editModal, setEditModal] = useState(null); // {castawayId, eventIdx}
 
+  // ── Real-time Firestore listeners ──
   useEffect(() => {
-    const scores = loadData();
-    const players = loadPlayers();
-    if (scores) setCastawayScores({ ...defaultCastawayScores(), ...scores });
-    if (players) setFantasyPlayers(players);
-    setLoading(false);
+    // Listen to scores
+    const unsubScores = onSnapshot(doc(db, "fantasy", "scores"), (snap) => {
+      if (snap.exists()) {
+        setCastawayScores({ ...defaultCastawayScores(), ...snap.data() });
+      }
+      setLoading(false);
+    }, () => setLoading(false));
+
+    // Listen to players
+    const unsubPlayers = onSnapshot(doc(db, "fantasy", "players"), (snap) => {
+      if (snap.exists()) setFantasyPlayers(snap.data().list || []);
+    });
+
+    return () => { unsubScores(); unsubPlayers(); };
   }, []);
 
   const showToast = (msg) => {
@@ -147,12 +163,12 @@ export default function SurvivorFantasy() {
 
   const updateScores = useCallback((newScores) => {
     setCastawayScores(newScores);
-    saveData(newScores);
+    saveScoresToDB(newScores);
   }, []);
 
   const updatePlayers = useCallback((newPlayers) => {
     setFantasyPlayers(newPlayers);
-    savePlayers(newPlayers);
+    savePlayersToDB(newPlayers);
   }, []);
 
   // Add event to castaway
@@ -437,7 +453,7 @@ export default function SurvivorFantasy() {
             </h2>
             {["Cila","Kalo","Vatu"].map(tribe => {
               const tc = TRIBE_COLORS[tribe];
-              const members = CAST.filter(c => c.tribe === tribe);
+              const members = CAST.filter(c => c.tribe === tribe).sort((a, b) => a.name.localeCompare(b.name));
               return (
                 <div key={tribe} style={{marginBottom:24}}>
                   <div style={{
@@ -462,9 +478,14 @@ export default function SurvivorFantasy() {
                                 textDecoration:score.eliminated?"line-through":"none"}}>
                                 {c.name}
                               </div>
-                              <div style={{fontFamily:"'Lato',sans-serif", fontSize:11, color:"#777"}}>
+                              <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#666", marginTop:1}}>
                                 {c.seasons}
                               </div>
+                              {c.fact && (
+                                <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#8a7a5a", marginTop:4, lineHeight:1.5, fontStyle:"italic"}}>
+                                  {c.fact}
+                                </div>
+                              )}
                             </div>
                             <div style={{fontFamily:"'Cinzel Decorative',serif", fontSize:18, fontWeight:700,
                               color: score.pts>0?"#FFD700":score.pts<0?"#ef4444":"#888", minWidth:48, textAlign:"right"}}>
