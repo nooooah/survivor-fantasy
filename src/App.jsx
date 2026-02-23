@@ -291,7 +291,7 @@ function EditPicksModal({ player, fantasyPlayers, photos, onSave, onClose }) {
             const selected = picks.includes(c.id);
             const tc = TRIBE_COLORS[c.tribe];
             const pickCount = fantasyPlayers.filter(p => p.id !== player.id && p.picks.includes(c.id)).length;
-            const maxedOut = !selected && pickCount >= 3;
+            const maxedOut = !selected && pickCount >= 4;
             return (
               <div key={c.id}
                 onClick={() => {
@@ -309,8 +309,8 @@ function EditPicksModal({ player, fantasyPlayers, photos, onSave, onClose }) {
                 <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={30} />
                 <span style={{flex:1, fontFamily:"'Lato',sans-serif", fontSize:13, color: selected?"#F5E6C8":"#888"}}>{c.name}</span>
                 {pickCount > 0 && (
-                  <span style={{fontFamily:"'Lato',sans-serif", fontSize:10, color: pickCount>=3?"#ef4444":"#aaa"}}>
-                    {pickCount}/3
+                  <span style={{fontFamily:"'Lato',sans-serif", fontSize:10, color: pickCount>=4?"#ef4444":"#aaa"}}>
+                    {pickCount}/4
                   </span>
                 )}
                 <span className="tag" style={{background:`${tc.bg}44`, color:tc.border, border:`1px solid ${tc.border}44`}}>{c.tribe}</span>
@@ -1117,7 +1117,7 @@ export default function SurvivorFantasy() {
                   const selected = newPlayerPicks.includes(c.id);
                   const tc = TRIBE_COLORS[c.tribe];
                   const pickCount = fantasyPlayers.filter(p => p.picks.includes(c.id)).length;
-                  const maxedOut = !selected && pickCount >= 3;
+                  const maxedOut = !selected && pickCount >= 4;
                   return (
                     <div key={c.id}
                       onClick={() => {
@@ -1134,8 +1134,8 @@ export default function SurvivorFantasy() {
                       }}>
                       <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={32} />
                       <span style={{flex:1, fontFamily:"'Lato',sans-serif", fontSize:13, color: selected?"#F5E6C8":"#888"}}>{c.name}</span>
-                      {pickCount > 0 && <span style={{fontFamily:"'Lato',sans-serif", fontSize:10, color: pickCount>=3?"#ef4444":"#888"}}>
-                        {pickCount}/3 picked
+                      {pickCount > 0 && <span style={{fontFamily:"'Lato',sans-serif", fontSize:10, color: pickCount>=4?"#ef4444":"#888"}}>
+                        {pickCount}/4 picked
                       </span>}
                       <span className="tag" style={{background:`${tc.bg}44`, color:tc.border, border:`1px solid ${tc.border}44`}}>{c.tribe}</span>
                       {selected && <span style={{color:"#FFD700", fontSize:16}}>✓</span>}
