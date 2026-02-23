@@ -219,6 +219,70 @@ function defaultCastawayScores() {
 
 function defaultFantasyPlayers() { return []; }
 
+// ─── EDIT PICKS MODAL ────────────────────────────────────────────────────────
+function EditPicksModal({ player, fantasyPlayers, photos, onSave, onClose }) {
+  const [picks, setPicks] = useState(player.picks);
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3 style={{margin:"0 0 6px", fontSize:14, letterSpacing:3, color:"#D97706", textTransform:"uppercase", fontFamily:"'Lato',sans-serif"}}>Edit Picks</h3>
+        <div style={{display:"flex", alignItems:"center", gap:10, fontWeight:700, fontSize:16, marginBottom:16}}>
+          <Avatar id={player.id} name={player.name} emoji="👤" photos={photos} size={32} />
+          {player.name}
+        </div>
+        <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginBottom:8, letterSpacing:1}}>
+          CASTAWAYS ({picks.length}/6)
+        </div>
+        <div style={{display:"grid", gap:6, maxHeight:360, overflowY:"auto", marginBottom:16}}>
+          {CAST.map(c => {
+            const selected = picks.includes(c.id);
+            const tc = TRIBE_COLORS[c.tribe];
+            const pickCount = fantasyPlayers.filter(p => p.id !== player.id && p.picks.includes(c.id)).length;
+            const maxedOut = !selected && pickCount >= 3;
+            return (
+              <div key={c.id}
+                onClick={() => {
+                  if (maxedOut) return;
+                  if (selected) setPicks(p => p.filter(x => x !== c.id));
+                  else if (picks.length < 6) setPicks(p => [...p, c.id]);
+                }}
+                style={{
+                  padding:"8px 12px", borderRadius:8, cursor: maxedOut ? "not-allowed" : "pointer",
+                  border:`1px solid ${selected?tc.border:"rgba(255,255,255,.08)"}`,
+                  background: selected?`${tc.bg}33`:"rgba(255,255,255,.02)",
+                  display:"flex", alignItems:"center", gap:10, transition:"all .15s",
+                  opacity: (!selected && picks.length>=6) || maxedOut ? .4 : 1
+                }}>
+                <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={30} />
+                <span style={{flex:1, fontFamily:"'Lato',sans-serif", fontSize:13, color: selected?"#F5E6C8":"#888"}}>{c.name}</span>
+                {pickCount > 0 && (
+                  <span style={{fontFamily:"'Lato',sans-serif", fontSize:10, color: pickCount>=3?"#ef4444":"#aaa"}}>
+                    {pickCount}/3
+                  </span>
+                )}
+                <span className="tag" style={{background:`${tc.bg}44`, color:tc.border, border:`1px solid ${tc.border}44`}}>{c.tribe}</span>
+                {selected && <span style={{color:"#FFD700", fontSize:16}}>✓</span>}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{display:"flex", gap:10}}>
+          <button className="btn" onClick={() => onSave(player.id, picks)}
+            disabled={picks.length === 0}
+            style={{flex:1, background:"linear-gradient(135deg,#B45309,#D97706)", color:"#fff",
+              padding:"12px", fontSize:13, opacity: picks.length===0 ? .5 : 1}}>
+            Save Picks ✓
+          </button>
+          <button className="btn" onClick={onClose}
+            style={{background:"rgba(255,255,255,.07)", color:"#888", padding:"12px 20px", fontSize:13}}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function SurvivorFantasy() {
   const [tab, setTab] = useState("leaderboard");
@@ -240,7 +304,9 @@ export default function SurvivorFantasy() {
   const [newPlayerPicks, setNewPlayerPicks] = useState([]);
 
   // Edit score modal
-  const [editModal, setEditModal] = useState(null); // {castawayId, eventIdx}
+  const [editModal, setEditModal] = useState(null);
+  // Edit picks modal
+  const [editPicksModal, setEditPicksModal] = useState(null); // player object
 
   // ── Real-time Firestore listeners ──
   useEffect(() => {
@@ -328,6 +394,13 @@ export default function SurvivorFantasy() {
   const removeFantasyPlayer = (id) => {
     updatePlayers(fantasyPlayers.filter(p => p.id !== id));
     showToast("Player removed");
+  };
+
+  const saveEditedPicks = (playerId, newPicks) => {
+    const updated = fantasyPlayers.map(p => p.id === playerId ? { ...p, picks: newPicks } : p);
+    updatePlayers(updated);
+    setEditPicksModal(null);
+    showToast("Picks updated!");
   };
 
   const getFantasyScore = (player) =>
@@ -694,6 +767,10 @@ export default function SurvivorFantasy() {
                       </span>
                     </div>
                   </div>
+                  <button className="btn" onClick={() => setEditPicksModal(p)}
+                    style={{background:"rgba(255,215,0,.1)", color:"#D97706", border:"1px solid rgba(255,215,0,.3)", padding:"6px 10px", fontSize:11, flexShrink:0}}>
+                    ✏️ Picks
+                  </button>
                   <button className="btn" onClick={() => removeFantasyPlayer(p.id)}
                     style={{background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"6px 10px", fontSize:11, flexShrink:0}}>
                     Remove
@@ -857,21 +934,27 @@ export default function SurvivorFantasy() {
                 {CAST.map(c => {
                   const selected = newPlayerPicks.includes(c.id);
                   const tc = TRIBE_COLORS[c.tribe];
+                  const pickCount = fantasyPlayers.filter(p => p.picks.includes(c.id)).length;
+                  const maxedOut = !selected && pickCount >= 3;
                   return (
                     <div key={c.id}
                       onClick={() => {
+                        if (maxedOut) return;
                         if (selected) setNewPlayerPicks(p => p.filter(x=>x!==c.id));
                         else if (newPlayerPicks.length < 6) setNewPlayerPicks(p => [...p, c.id]);
                       }}
                       style={{
-                        padding:"8px 12px", borderRadius:8, cursor:"pointer",
+                        padding:"8px 12px", borderRadius:8, cursor: maxedOut ? "not-allowed" : "pointer",
                         border:`1px solid ${selected?tc.border:"rgba(255,255,255,.08)"}`,
                         background: selected?`${tc.bg}33`:"rgba(255,255,255,.02)",
                         display:"flex", alignItems:"center", gap:10, transition:"all .15s",
-                        opacity: !selected && newPlayerPicks.length>=6 ? .4 : 1
+                        opacity: (!selected && newPlayerPicks.length>=6) || maxedOut ? .4 : 1
                       }}>
                       <Avatar id={c.id} name={c.name} emoji={c.emoji} tribe={c.tribe} photos={photos} size={32} />
                       <span style={{flex:1, fontFamily:"'Lato',sans-serif", fontSize:13, color: selected?"#F5E6C8":"#888"}}>{c.name}</span>
+                      {pickCount > 0 && <span style={{fontFamily:"'Lato',sans-serif", fontSize:10, color: pickCount>=3?"#ef4444":"#888"}}>
+                        {pickCount}/3 picked
+                      </span>}
                       <span className="tag" style={{background:`${tc.bg}44`, color:tc.border, border:`1px solid ${tc.border}44`}}>{c.tribe}</span>
                       {selected && <span style={{color:"#FFD700", fontSize:16}}>✓</span>}
                     </div>
@@ -893,6 +976,17 @@ export default function SurvivorFantasy() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── EDIT PICKS MODAL ── */}
+      {editPicksModal && (
+        <EditPicksModal
+          player={editPicksModal}
+          fantasyPlayers={fantasyPlayers}
+          photos={photos}
+          onSave={saveEditedPicks}
+          onClose={() => setEditPicksModal(null)}
+        />
       )}
 
       {/* ── PHOTO UPLOAD MODAL ── */}
