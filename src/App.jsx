@@ -781,18 +781,53 @@ export default function SurvivorFantasy() {
                               }}>
                                 <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={24} />
                                 <div>
-                                  <div style={{fontSize:11, color:"#888", marginBottom:2}}>{p.name}</div>
+                                  <div style={{fontSize:11, color:"#888", marginBottom:4}}>{p.name}</div>
                                   {pick && cast ? (
-                                    <div style={{display:"flex", alignItems:"center", gap:5}}>
+                                    <div style={{display:"flex", alignItems:"center", gap:5, flexWrap:"wrap"}}>
                                       <Avatar id={cast.id} name={cast.name} emoji={cast.emoji} tribe={cast.tribe} photos={photos} size={18} />
                                       <span style={{color: correct?"#22c55e":wrong?"#ef4444":"#c4a97a", fontWeight:700, fontSize:11}}>
                                         {cast.name.split(" ")[0]}
                                       </span>
                                       {correct && <span style={{color:"#22c55e", fontSize:11}}>+3 pts ✓</span>}
                                       {wrong && <span style={{color:"#ef4444", fontSize:11}}>✗</span>}
+                                      {!resolved && (
+                                        <select value={pick} onChange={e => {
+                                          const newSideBets = { ...sideBets, [week]: { ...bets, [p.id]: e.target.value }};
+                                          setSideBets(newSideBets);
+                                          saveSideBetsToDB(newSideBets);
+                                          showToast(`${p.name}'s pick updated!`);
+                                        }} style={{fontSize:10, padding:"2px 4px", marginLeft:2}}>
+                                          {["Cila","Kalo","Vatu"].map(tribe => (
+                                            <optgroup key={tribe} label={tribe}>
+                                              {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                              ))}
+                                            </optgroup>
+                                          ))}
+                                        </select>
+                                      )}
                                     </div>
                                   ) : (
-                                    <span style={{color:"#444", fontSize:11}}>No bet placed</span>
+                                    !resolved ? (
+                                      <select value="" onChange={e => {
+                                        if (!e.target.value) return;
+                                        const newSideBets = { ...sideBets, [week]: { ...bets, [p.id]: e.target.value }};
+                                        setSideBets(newSideBets);
+                                        saveSideBetsToDB(newSideBets);
+                                        showToast(`${p.name}'s pick saved!`);
+                                      }} style={{fontSize:10, padding:"2px 4px"}}>
+                                        <option value="">— Pick castaway —</option>
+                                        {["Cila","Kalo","Vatu"].map(tribe => (
+                                          <optgroup key={tribe} label={tribe}>
+                                            {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
+                                              <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                          </optgroup>
+                                        ))}
+                                      </select>
+                                    ) : (
+                                      <span style={{color:"#444", fontSize:11}}>No bet placed</span>
+                                    )
                                   )}
                                 </div>
                               </div>
