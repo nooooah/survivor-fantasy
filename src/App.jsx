@@ -93,8 +93,6 @@ const SCORING_SYSTEM = [
   { category: "Endgame", event: "2nd Runner-up",                                 pts: 8,   icon: "🥉" },
   { category: "Endgame", event: "1st Runner-up",                                 pts: 12,  icon: "🥈" },
   { category: "Endgame", event: "SOLE SURVIVOR",                                 pts: 20,  icon: "🥥" },
-  // Side Bets
-  { category: "Side Bets", event: "Weekly elimination (correct guess)",          pts: 3,   icon: "🎰" },
 ];
 
 // ─── FIRESTORE HELPERS ───────────────────────────────────────────────────────
@@ -109,6 +107,9 @@ async function savePhotoUrlToDB(id, url) {
     const photosDoc = doc(db, "fantasy", "photos");
     await setDoc(photosDoc, { [id]: url }, { merge: true });
   } catch (e) { console.error(e); }
+}
+async function saveSideBetsToDB(data) {
+  try { await setDoc(doc(db, "fantasy", "sidebets"), data); } catch (e) { console.error(e); }
 }
 
 // ─── AVATAR COMPONENT ────────────────────────────────────────────────────────
@@ -218,6 +219,59 @@ function defaultCastawayScores() {
 
 function defaultFantasyPlayers() { return []; }
 
+// ─── SIDE BETS MODAL ─────────────────────────────────────────────────────────
+function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, onSave, onClose }) {
+  const [picks, setPicks] = useState(sideBets[weekKey] || {});
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3 style={{margin:"0 0 4px", fontSize:13, letterSpacing:3, color:"#059669", textTransform:"uppercase", fontFamily:"'Lato',sans-serif"}}>
+          🎰 Side Bet — Episode {weekNum}
+        </h3>
+        <p style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginTop:0, marginBottom:18}}>
+          Each player picks who they think will be eliminated this episode. Correct guess = +3 pts.
+        </p>
+        <div style={{display:"flex", flexDirection:"column", gap:14, marginBottom:20}}>
+          {fantasyPlayers.map(p => (
+            <div key={p.id}>
+              <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6}}>
+                <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={28} />
+                <span style={{fontWeight:700, fontSize:13}}>{p.name}</span>
+                {picks[p.id] && (
+                  <span style={{fontFamily:"'Lato',sans-serif", fontSize:11, color:"#059669"}}>
+                    → {CAST.find(c=>c.id===picks[p.id])?.name}
+                  </span>
+                )}
+              </div>
+              <select value={picks[p.id] || ""} onChange={e => setPicks(prev => ({...prev, [p.id]: e.target.value}))}
+                style={{width:"100%", fontSize:12, padding:"7px 10px"}}>
+                <option value="">— No bet —</option>
+                {["Cila","Kalo","Vatu"].map(tribe => (
+                  <optgroup key={tribe} label={`Tribe ${tribe}`}>
+                    {CAST.filter(c => c.tribe === tribe).sort((a,b) => a.name.localeCompare(b.name)).map(c => (
+                      <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex", gap:10}}>
+          <button className="btn" onClick={() => onSave({ ...sideBets, [weekKey]: picks })}
+            style={{flex:1, background:"linear-gradient(135deg,#065F46,#059669)", color:"#fff", padding:"12px", fontSize:13}}>
+            Save Bets ✓
+          </button>
+          <button className="btn" onClick={onClose}
+            style={{background:"rgba(255,255,255,.07)", color:"#888", padding:"12px 20px", fontSize:13}}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── EDIT PICKS MODAL ────────────────────────────────────────────────────────
 function EditPicksModal({ player, fantasyPlayers, photos, onSave, onClose }) {
   const [picks, setPicks] = useState(player.picks);
@@ -288,9 +342,11 @@ export default function SurvivorFantasy() {
   const [castawayScores, setCastawayScores] = useState(defaultCastawayScores());
   const [fantasyPlayers, setFantasyPlayers] = useState(defaultFantasyPlayers());
   const [photos, setPhotos] = useState({});
+  const [sideBets, setSideBets] = useState({}); // { "week1": { playerId: castawayId }, resolved: { "week1": castawayId } }
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
-  const [photoTarget, setPhotoTarget] = useState(null); // {id, name, emoji, tribe?}
+  const [photoTarget, setPhotoTarget] = useState(null);
+  const [sideBetsModal, setSideBetsModal] = useState(false);
 
   // Add event modal
   const [eventModal, setEventModal] = useState(null); // {castawayId}
@@ -323,7 +379,12 @@ export default function SurvivorFantasy() {
       if (snap.exists()) setPhotos(snap.data());
     });
 
-    return () => { unsubScores(); unsubPlayers(); unsubPhotos(); };
+    // Load side bets
+    const unsubSideBets = onSnapshot(doc(db, "fantasy", "sidebets"), (snap) => {
+      if (snap.exists()) setSideBets(snap.data());
+    });
+
+    return () => { unsubScores(); unsubPlayers(); unsubPhotos(); unsubSideBets(); };
   }, []);
 
   const showToast = (msg) => {
@@ -402,8 +463,20 @@ export default function SurvivorFantasy() {
     showToast("Picks updated!");
   };
 
-  const getFantasyScore = (player) =>
-    player.picks.reduce((sum, cid) => sum + (castawayScores[cid]?.pts || 0), 0);
+  const getSideBetPoints = (playerId) => {
+    let pts = 0;
+    Object.keys(sideBets.resolved || {}).forEach(week => {
+      const eliminated = sideBets.resolved[week];
+      const bets = sideBets[week] || {};
+      if (bets[playerId] === eliminated) pts += 3;
+    });
+    return pts;
+  };
+
+  const getFantasyScore = (player) => {
+    const pickPts = player.picks.reduce((sum, cid) => sum + (castawayScores[cid]?.pts || 0), 0);
+    return pickPts + getSideBetPoints(player.id);
+  };
 
   const sortedCastaways = CAST
     .map(c => ({ ...c, ...(castawayScores[c.id] || { pts: 0, events: [], eliminated: false }) }))
@@ -590,6 +663,11 @@ export default function SurvivorFantasy() {
                       <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={32} />
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700, fontSize:13}}>{p.name}</div>
+                        {getSideBetPoints(p.id) > 0 && (
+                          <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#059669", marginTop:1}}>
+                            🎰 +{getSideBetPoints(p.id)} side bets
+                          </div>
+                        )}
                       </div>
                       <div style={{fontFamily:"'Cinzel Decorative',serif", fontSize:18, fontWeight:700, flexShrink:0,
                         color: p.score>0?"#FFD700":p.score<0?"#ef4444":"#666"}}>
@@ -620,6 +698,103 @@ export default function SurvivorFantasy() {
               </div>
 
             </div>
+
+            {/* ── SIDE BETS ── */}
+            <div style={{marginTop:28}}>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14}}>
+                <h2 style={{fontSize:13, letterSpacing:4, color:"#D97706", margin:0, fontFamily:"'Lato',sans-serif", textTransform:"uppercase"}}>
+                  🎰 Weekly Side Bets
+                </h2>
+                <button className="btn" onClick={() => setSideBetsModal(true)}
+                  style={{background:"linear-gradient(135deg,#065F46,#059669)", color:"#fff", padding:"7px 14px", fontSize:11}}>
+                  + New Week
+                </button>
+              </div>
+              {Object.keys(sideBets).filter(k => k !== "resolved").length === 0 ? (
+                <div style={{textAlign:"center", padding:"24px 16px", color:"#444", fontFamily:"'Lato',sans-serif",
+                  fontSize:12, border:"1px dashed rgba(255,215,0,.1)", borderRadius:10, lineHeight:1.8}}>
+                  No side bets yet. Click "+ New Week" to let players predict who gets eliminated!
+                </div>
+              ) : (
+                <div style={{display:"flex", flexDirection:"column", gap:12}}>
+                  {Object.keys(sideBets).filter(k => k !== "resolved").sort().map(week => {
+                    const bets = sideBets[week] || {};
+                    const resolved = sideBets.resolved?.[week];
+                    const weekNum = week.replace("week","");
+                    return (
+                      <div key={week} className="card" style={{padding:"14px 16px"}}>
+                        <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, gap:8, flexWrap:"wrap"}}>
+                          <div style={{fontWeight:700, fontSize:14}}>Episode {weekNum}</div>
+                          <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
+                            {resolved ? (
+                              <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#22c55e"}}>
+                                ✓ Eliminated: <strong>{CAST.find(c=>c.id===resolved)?.name || resolved}</strong>
+                              </div>
+                            ) : (
+                              <select onChange={e => {
+                                if (!e.target.value) return;
+                                const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}), [week]: e.target.value }};
+                                setSideBets(newSideBets);
+                                saveSideBetsToDB(newSideBets);
+                                showToast("Result saved! Points awarded. 🎉");
+                              }} defaultValue="" style={{fontSize:11, padding:"5px 8px"}}>
+                                <option value="">Reveal result...</option>
+                                {CAST.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                              </select>
+                            )}
+                            {!resolved && (
+                              <button className="btn" onClick={() => {
+                                const newSideBets = { ...sideBets };
+                                delete newSideBets[week];
+                                setSideBets(newSideBets);
+                                saveSideBetsToDB(newSideBets);
+                              }} style={{background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"4px 8px", fontSize:10}}>
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {/* Player bets */}
+                        <div style={{display:"flex", flexWrap:"wrap", gap:8}}>
+                          {fantasyPlayers.map(p => {
+                            const pick = bets[p.id];
+                            const cast = CAST.find(c => c.id === pick);
+                            const correct = resolved && pick === resolved;
+                            const wrong = resolved && pick && pick !== resolved;
+                            return (
+                              <div key={p.id} style={{
+                                background: correct?"rgba(34,197,94,.12)":wrong?"rgba(239,68,68,.08)":"rgba(255,255,255,.04)",
+                                border:`1px solid ${correct?"#22c55e44":wrong?"#ef444433":"rgba(255,215,0,.1)"}`,
+                                borderRadius:8, padding:"8px 12px", fontFamily:"'Lato',sans-serif",
+                                display:"flex", alignItems:"center", gap:8
+                              }}>
+                                <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={24} />
+                                <div>
+                                  <div style={{fontSize:11, color:"#888", marginBottom:2}}>{p.name}</div>
+                                  {pick && cast ? (
+                                    <div style={{display:"flex", alignItems:"center", gap:5}}>
+                                      <Avatar id={cast.id} name={cast.name} emoji={cast.emoji} tribe={cast.tribe} photos={photos} size={18} />
+                                      <span style={{color: correct?"#22c55e":wrong?"#ef4444":"#c4a97a", fontWeight:700, fontSize:11}}>
+                                        {cast.name.split(" ")[0]}
+                                      </span>
+                                      {correct && <span style={{color:"#22c55e", fontSize:11}}>+3 pts ✓</span>}
+                                      {wrong && <span style={{color:"#ef4444", fontSize:11}}>✗</span>}
+                                    </div>
+                                  ) : (
+                                    <span style={{color:"#444", fontSize:11}}>No bet placed</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
 
@@ -764,6 +939,11 @@ export default function SurvivorFantasy() {
                       <span style={{color: p.score>0?"#FFD700":p.score<0?"#ef4444":"#888", fontWeight:700}}>
                         {p.score>0?"+":""}{p.score} pts
                       </span>
+                      {getSideBetPoints(p.id) > 0 && (
+                        <span style={{color:"#059669", fontSize:11, marginLeft:6}}>
+                          (incl. 🎰 +{getSideBetPoints(p.id)} side bets)
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -979,6 +1159,24 @@ export default function SurvivorFantasy() {
           </div>
         </div>
       )}
+
+      {/* ── SIDE BETS MODAL ── */}
+      {sideBetsModal && (() => {
+        const existingWeeks = Object.keys(sideBets).filter(k => k !== "resolved");
+        const nextWeek = existingWeeks.length + 1;
+        const weekKey = `week${nextWeek}`;
+        return (
+          <SideBetsModal
+            weekKey={weekKey}
+            weekNum={nextWeek}
+            fantasyPlayers={fantasyPlayers}
+            photos={photos}
+            sideBets={sideBets}
+            onSave={(newBets) => { setSideBets(newBets); saveSideBetsToDB(newBets); setSideBetsModal(false); showToast(`Episode ${nextWeek} bets saved!`); }}
+            onClose={() => setSideBetsModal(false)}
+          />
+        );
+      })()}
 
       {/* ── EDIT PICKS MODAL ── */}
       {editPicksModal && (
