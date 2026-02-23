@@ -727,8 +727,19 @@ export default function SurvivorFantasy() {
                           <div style={{fontWeight:700, fontSize:14}}>Episode {weekNum}</div>
                           <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
                             {resolved ? (
-                              <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#22c55e"}}>
-                                ✓ Eliminated: <strong>{CAST.find(c=>c.id===resolved)?.name || resolved}</strong>
+                              <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
+                                <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#22c55e"}}>
+                                  ✓ Eliminated: <strong>{CAST.find(c=>c.id===resolved)?.name || resolved}</strong>
+                                </div>
+                                <button className="btn" onClick={() => {
+                                  const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}) }};
+                                  delete newSideBets.resolved[week];
+                                  setSideBets(newSideBets);
+                                  saveSideBetsToDB(newSideBets);
+                                  showToast("Result cleared — you can set a new one.");
+                                }} style={{background:"rgba(255,215,0,.08)", color:"#D97706", border:"1px solid rgba(255,215,0,.3)", padding:"3px 8px", fontSize:10}}>
+                                  ✏️ Edit
+                                </button>
                               </div>
                             ) : (
                               <select onChange={e => {
