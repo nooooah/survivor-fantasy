@@ -744,9 +744,9 @@ export default function SurvivorFantasy() {
                 <div>No fantasy managers yet. Add one to get started!</div>
               </div>
             ) : sortedFantasyPlayers.map((p, i) => (
-              <div key={p.id} className="card" style={{padding:"18px 20px", marginBottom:12}}>
-                {/* Manager header: rank + photo + name + score + remove */}
-                <div style={{display:"flex", alignItems:"center", gap:12, marginBottom:14}}>
+              <div key={p.id} className="card" style={{padding:"16px", marginBottom:12}}>
+                {/* Row 1: rank + photo + name/score */}
+                <div style={{display:"flex", alignItems:"center", gap:12, marginBottom:10}}>
                   <div style={{fontSize:i<3?22:16, color:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":"#888", width:28, textAlign:"center", flexShrink:0}}>
                     {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
                   </div>
@@ -760,20 +760,23 @@ export default function SurvivorFantasy() {
                         alignItems:"center", justifyContent:"center", padding:0}}>📷</button>
                   </div>
                   <div style={{flex:1, minWidth:0}}>
-                    <div style={{fontWeight:700, fontSize:16, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>{p.name}</div>
-                    <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginTop:2}}>
+                    <div style={{fontWeight:700, fontSize:16, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{p.name}</div>
+                    <div style={{fontFamily:"'Lato',sans-serif", fontSize:13, marginTop:3}}>
                       <span style={{color: p.score>0?"#FFD700":p.score<0?"#ef4444":"#888", fontWeight:700}}>
                         {p.score>0?"+":""}{p.score} pts
                       </span>
                     </div>
                   </div>
+                </div>
+                {/* Row 2: action buttons */}
+                <div style={{display:"flex", gap:8, marginBottom:14, paddingLeft:40}}>
                   <button className="btn" onClick={() => setEditPicksModal(p)}
-                    style={{background:"rgba(255,215,0,.1)", color:"#D97706", border:"1px solid rgba(255,215,0,.3)", padding:"6px 10px", fontSize:11, flexShrink:0}}>
-                    ✏️ Picks
+                    style={{flex:1, background:"rgba(255,215,0,.1)", color:"#D97706", border:"1px solid rgba(255,215,0,.3)", padding:"7px 10px", fontSize:12}}>
+                    ✏️ Edit Picks
                   </button>
                   <button className="btn" onClick={() => removeFantasyPlayer(p.id)}
-                    style={{background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"6px 10px", fontSize:11, flexShrink:0}}>
-                    Remove
+                    style={{flex:1, background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"7px 10px", fontSize:12}}>
+                    🗑 Remove
                   </button>
                 </div>
                 {/* Picks */}
