@@ -379,7 +379,7 @@ function PasscodeGate({ onUnlock }) {
           background:"linear-gradient(90deg,#FFD700,#FFA500,#FFD700)",
           backgroundSize:"200% 100%", animation:"shimmer 3s linear infinite",
           WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text"
-        }}>Survivor 50 Fantasy</div>
+        }}>Survivor 50 Fantasy</h1>
         <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", letterSpacing:3, marginBottom:32}}>
           TRIBAL COUNCIL MEMBERS ONLY
         </div>
@@ -417,7 +417,6 @@ function PasscodeGate({ onUnlock }) {
 }
 
 export default function SurvivorFantasy() {
-  const [unlocked, setUnlocked] = useState(() => localStorage.getItem("survivor50_auth") === "true");
   const [unlocked, setUnlocked] = useState(() => localStorage.getItem("survivor50_auth") === "true");
   const [tab, setTab] = useState("leaderboard");
   const [castawayScores, setCastawayScores] = useState(defaultCastawayScores());
