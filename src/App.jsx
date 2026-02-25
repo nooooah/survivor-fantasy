@@ -337,7 +337,88 @@ function EditPicksModal({ player, fantasyPlayers, photos, onSave, onClose }) {
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
+const PASSCODE = "riceandbeans";
+
+function PasscodeGate({ onUnlock }) {
+  const [input, setInput] = useState("");
+  const [error, setError] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  const attempt = () => {
+    if (input.trim().toLowerCase() === PASSCODE) {
+      localStorage.setItem("survivor50_auth", "true");
+      onUnlock();
+    } else {
+      setError(true);
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    }
+  };
+
+  return (
+    <div style={{
+      background:"linear-gradient(160deg,#0f0c29 0%,#302b63 50%,#1a0a00 100%)",
+      minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center",
+      fontFamily:"'Cinzel Decorative','Cinzel','Georgia',serif", color:"#F5E6C8", padding:24
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Lato:wght@300;400;700&display=swap');
+        @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .gate-card{animation:fadeIn .5s ease}
+        .shake{animation:shake .4s ease}
+      `}</style>
+      <div className={`gate-card${shake?" shake":""}`} style={{
+        background:"rgba(255,255,255,.04)", border:"1px solid rgba(255,215,0,.2)",
+        borderRadius:20, padding:"40px 32px", maxWidth:380, width:"100%", textAlign:"center"
+      }}>
+        <div style={{fontSize:48, marginBottom:16}}>🌴</div>
+        <h1 style={{
+          margin:"0 0 6px", fontSize:"clamp(18px,5vw,26px)", fontWeight:700,
+          background:"linear-gradient(90deg,#FFD700,#FFA500,#FFD700)",
+          backgroundSize:"200% 100%", animation:"shimmer 3s linear infinite",
+          WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text"
+        }}>Survivor 50 Fantasy</div>
+        <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", letterSpacing:3, marginBottom:32}}>
+          TRIBAL COUNCIL MEMBERS ONLY
+        </div>
+        <div style={{fontFamily:"'Lato',sans-serif", fontSize:13, color:"#888", marginBottom:10, textAlign:"left"}}>
+          Enter passcode:
+        </div>
+        <input
+          type="password"
+          value={input}
+          onChange={e => { setInput(e.target.value); setError(false); }}
+          onKeyDown={e => e.key === "Enter" && attempt()}
+          placeholder="••••••••••••"
+          style={{
+            width:"100%", background:"rgba(255,255,255,.06)", border:`1px solid ${error?"#ef4444":"rgba(255,215,0,.2)"}`,
+            borderRadius:10, color:"#F5E6C8", padding:"12px 16px", fontFamily:"'Lato',sans-serif",
+            fontSize:16, outline:"none", marginBottom:8, boxSizing:"border-box", letterSpacing:4
+          }}
+        />
+        {error && (
+          <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#ef4444", marginBottom:12, textAlign:"left"}}>
+            ✗ Wrong passcode. Try again.
+          </div>
+        )}
+        <button onClick={attempt} style={{
+          width:"100%", marginTop:8, padding:"13px", borderRadius:10, border:"none", cursor:"pointer",
+          background:"linear-gradient(135deg,#B45309,#D97706)", color:"#fff",
+          fontFamily:"'Cinzel Decorative',serif", fontSize:13, fontWeight:700, letterSpacing:2,
+          transition:"filter .2s"
+        }}>
+          Enter Tribal Council 🔥
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SurvivorFantasy() {
+  const [unlocked, setUnlocked] = useState(() => localStorage.getItem("survivor50_auth") === "true");
+  const [unlocked, setUnlocked] = useState(() => localStorage.getItem("survivor50_auth") === "true");
   const [tab, setTab] = useState("leaderboard");
   const [castawayScores, setCastawayScores] = useState(defaultCastawayScores());
   const [fantasyPlayers, setFantasyPlayers] = useState(defaultFantasyPlayers());
@@ -485,6 +566,8 @@ export default function SurvivorFantasy() {
   const sortedFantasyPlayers = [...fantasyPlayers]
     .map(p => ({ ...p, score: getFantasyScore(p) }))
     .sort((a, b) => b.score - a.score);
+
+  if (!unlocked) return <PasscodeGate onUnlock={() => setUnlocked(true)} />;
 
   if (loading) return (
     <div style={{
