@@ -28,25 +28,25 @@ const CAST = [
   { id: "angelina",  name: "Angelina Keeley",         seasons: "S37",             tribe: "Kalo", emoji: "✈️", fact: "Famously negotiated her way into a jacket at Tribal Council — and made a fake idol out of a napkin." },
   { id: "aubry",     name: "Aubry Bracco",            seasons: "S32, S34, S38",   tribe: "Kalo", emoji: "🦋", fact: "Lost Kaoh Rong by one jury vote after Michele flipped — one of the most debated finales ever." },
   { id: "colby",     name: "Colby Donaldson",         seasons: "S2, S8, S20",     tribe: "Kalo", emoji: "🤠", fact: "Infamously took Tina to the finals instead of Keith in S2, costing himself the million dollars." },
-  { id: "genevieve", name: "Genevieve Mushaluk",      seasons: "S47",             tribe: "Kalo", emoji: "🌿", fact: "A corporate lawyer who dominated strategically and won S47 in a near-unanimous jury vote." },
+  { id: "genevieve", name: "Genevieve Mushaluk",      seasons: "S47",             tribe: "Kalo", emoji: "🌿", fact: "A corporate lawyer who dominated strategically, pulling off major blindsides and forming key alliances." },
   { id: "kyle",      name: "Kyle Fraser",             seasons: "S48 (Winner)",    tribe: "Kalo", emoji: "🥊", fact: "Won S48 after successfully navigating a tribe that kept losing immunity — the ultimate underdog winner." },
   { id: "q",         name: "Q Burdette",              seasons: "S46",             tribe: "Kalo", emoji: "⚡", fact: "Caused chaos in S46 by openly asking to be voted out at Tribal Council — then changed his mind mid-vote." },
   { id: "rizo",      name: "Rizo Velovic",            seasons: "S49",             tribe: "Kalo", emoji: "🎯", fact: "Played a quietly devastating strategic game in S49, orchestrating multiple blindsides without getting any blood on his hands." },
-  { id: "stephenie", name: "Stephenie LaGrossa",      seasons: "S10, S11, S20",   tribe: "Kalo", emoji: "💪", fact: "Sole survivor of the Ulong tribe in Palau — the only tribe in history to lose every single immunity challenge." },
+  { id: "stephenie", name: "Stephenie LaGrossa",      seasons: "S10, S11, S20",   tribe: "Kalo", emoji: "💪", fact: "Sole remaining member of the Ulong tribe in Palau — the only tribe in history to lose every single immunity challenge." },
   { id: "charlie",   name: "Charlie Davis",           seasons: "S46",             tribe: "Vatu", emoji: "🎭", fact: "A law student who lost the S46 finale by one jury vote after being blindsided by Q's unpredictable game." },
   { id: "chrissy",   name: "Chrissy Hofbeck",         seasons: "S35",             tribe: "Vatu", emoji: "🧮", fact: "An actuary who used math and probability to calculate her way to the final 3 in Heroes vs. Healers vs. Hustlers." },
   { id: "coach",     name: "Coach Wade",              seasons: "S18, S20, S23",   tribe: "Vatu", emoji: "🐉", fact: "Self-proclaimed 'Dragon Slayer' who built a cult-like alliance in South Pacific and nearly won with it." },
   { id: "dee",       name: "Dee Valladares",          seasons: "S45 (Winner)",    tribe: "Vatu", emoji: "🏆", fact: "Won S45 by masterfully playing both sides of the merge while her closest ally Austin had no idea she was against him." },
   { id: "jonathan",  name: "Jonathan Young",          seasons: "S42",             tribe: "Vatu", emoji: "🦁", fact: "Single-handedly dragged a boat to shore in S42, cementing himself as one of the most physically dominant players ever." },
-  { id: "kamilla",   name: "Kamilla Karthigesu",      seasons: "S44, S48",        tribe: "Vatu", emoji: "💼", fact: "Returned for S48 after a breakout S44 debut — one of only a few players to compete on back-to-back modern seasons." },
+  { id: "kamilla",   name: "Kamilla Karthigesu",      seasons: "S44, S48",        tribe: "Vatu", emoji: "💼", fact: "Notable for low-visibility but high-impact game, surviving tribal after tribal without ever receiving a vote against her." },
   { id: "mike",      name: "Mike White",              seasons: "S37",             tribe: "Vatu", emoji: "🎬", fact: "The writer/director of 'School of Rock' and 'The White Lotus' — and a legitimately great Survivor strategist." },
   { id: "tiffany",   name: "Tiffany Ervin",           seasons: "S46",             tribe: "Vatu", emoji: "🔥", fact: "Survived being on the wrong side of nearly every vote in S46 through sheer social charm and idol luck." },
 ];
 
 const TRIBE_COLORS = {
   Cila: { bg: "#EA580C", light: "#FFF7ED", border: "#F97316" },  // orange
-  Kalo: { bg: "#7C3AED", light: "#EDE9FE", border: "#8B5CF6" },  // purple
-  Vatu: { bg: "#0D9488", light: "#F0FDFA", border: "#14B8A6" },  // teal
+  Kalo: { bg: "#0D9488", light: "#F0FDFA", border: "#14B8A6" },  // teal
+  Vatu: { bg: "#BE185D", light: "#FDF2F8", border: "#EC4899" },  // magenta
 };
 
 const SCORING_SYSTEM = [
@@ -64,21 +64,21 @@ const SCORING_SYSTEM = [
   { category: "Idols", event: "Saved by another player's Idol",                  pts: 2,   icon: "🙏" },
   // Advantages
   { category: "Advantages", event: "Won or found an Advantage",                  pts: 2,   icon: "⚡" },
-  { category: "Advantages", event: "Played fake idol or advantage",              pts: 4,   icon: "🎭" },
+  { category: "Advantages", event: "Played fake idol or advantage",              pts: 3,   icon: "🎭" },
   { category: "Advantages", event: "Shot in the Dark success",                   pts: 5,   icon: "🎯" },
-  { category: "Advantages", event: "Lost vote",                                  pts: -3,  icon: "🚫" },
+  { category: "Advantages", event: "Lost vote",                                  pts: -2,  icon: "🚫" },
   { category: "Advantages", event: "Played an Advantage that drove outcome",     pts: 5,   icon: "🎲" },
   { category: "Advantages", event: "Misplayed an Advantage",                     pts: -4,  icon: "💸" },
   // Immunity
-  { category: "Immunity", event: "Tribal Immunity win (1st place)",              pts: 3,   icon: "🏆" },
-  { category: "Immunity", event: "Tribal Immunity win (2nd place)",              pts: 1,   icon: "🥈" },
+  { category: "Immunity", event: "Tribal Immunity win (1st place)",              pts: 4,   icon: "🏆" },
+  { category: "Immunity", event: "Tribal Immunity win (2nd place)",              pts: 2,   icon: "🥈" },
   { category: "Immunity", event: "Individual Immunity win",                      pts: 5,   icon: "🛡️" },
   { category: "Immunity", event: "Last place in challenge (merge)",              pts: -1,  icon: "🪨" },
   // Reward
-  { category: "Reward", event: "Tribal Reward win (1st place)",                  pts: 3,   icon: "🎁" },
+  { category: "Reward", event: "Tribal Reward win (1st place)",                  pts: 2,   icon: "🎁" },
   { category: "Reward", event: "Tribal Reward win (2nd place)",                  pts: 1,   icon: "🎀" },
-  { category: "Reward", event: "Individual Reward win",                          pts: 4,   icon: "🎖️" },
-  { category: "Reward", event: "Chosen for Reward",                              pts: 2,   icon: "🤗" },
+  { category: "Reward", event: "Individual Reward win",                          pts: 3,   icon: "🎖️" },
+  { category: "Reward", event: "Chosen for Reward",                              pts: 1,   icon: "🤗" },
   // Risk & Penalties
   { category: "Risk & Penalties", event: "Medical evacuation",                   pts: -8,  icon: "🚑" },
   { category: "Risk & Penalties", event: "Quit the game",                        pts: -10, icon: "🏳️" },
