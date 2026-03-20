@@ -17,30 +17,34 @@ const db = getFirestore(firebaseApp);
 // ─── DATA ───────────────────────────────────────────────────────────────────
 // Tribes confirmed: Orange=Cila, Purple=Kalo, Teal=Vatu
 const CAST = [
-  { id: "christian", name: "Christian Hubicki",       seasons: "S37",             tribe: "Cila", emoji: "🤓", fact: "PhD roboticist who solved puzzles faster than anyone in S37 history." },
-  { id: "cirie",     name: "Cirie Fields",            seasons: "S12,S16,S20,S34", tribe: "Cila", emoji: "👑", fact: "Never won an individual immunity challenge in 4 seasons — yet made it deep every time purely on social mastery." },
-  { id: "emily",     name: "Emily Flippen",           seasons: "S45",             tribe: "Cila", emoji: "📈", fact: "Started as the most disliked player on her tribe and pulled off one of the best redemption arcs ever." },
-  { id: "jenna",     name: "Jenna Lewis-Dougherty",  seasons: "S1, S8",          tribe: "Cila", emoji: "🌺", fact: "One of the original Borneo castaways — was on the very first season of Survivor ever aired." },
-  { id: "joe",       name: "Joe Hunter",              seasons: "S48",             tribe: "Cila", emoji: "🦅", fact: "A firefighter whose social game kept him safe deep into S48 despite being a physical threat." },
-  { id: "ozzy",      name: "Ozzy Lusth",              seasons: "S13,S16,S23,S34", tribe: "Cila", emoji: "🌊", fact: "Holds the record for most individual immunity wins in a single season (5) and is considered the greatest challenge beast ever." },
-  { id: "rick",      name: "Rick Devens",             seasons: "S38",             tribe: "Cila", emoji: "📺", fact: "Was voted out, came back from Edge of Extinction, found 2 idols, and nearly won — all while being a local news anchor." },
-  { id: "savannah",  name: "Savannah Louie",          seasons: "S49 (Winner)",    tribe: "Cila", emoji: "⭐", fact: "Won S49 without ever receiving a vote at Tribal Council the entire game." },
-  { id: "charlie",   name: "Charlie Davis",           seasons: "S46",             tribe: "Kalo", emoji: "🎭", fact: "A law student who lost the S46 finale by one jury vote after being blindsided by Q's unpredictable game." },
-  { id: "chrissy",   name: "Chrissy Hofbeck",         seasons: "S35",             tribe: "Kalo", emoji: "🧮", fact: "An actuary who used math and probability to calculate her way to the final 3 in Heroes vs. Healers vs. Hustlers." },
-  { id: "coach",     name: "Coach Wade",              seasons: "S18, S20, S23",   tribe: "Kalo", emoji: "🐉", fact: "Self-proclaimed 'Dragon Slayer' who built a cult-like alliance in South Pacific and nearly won with it." },
-  { id: "dee",       name: "Dee Valladares",          seasons: "S45 (Winner)",    tribe: "Kalo", emoji: "🏆", fact: "Won S45 by masterfully playing both sides of the merge while her closest ally Austin had no idea she was against him." },
-  { id: "jonathan",  name: "Jonathan Young",          seasons: "S42",             tribe: "Kalo", emoji: "🦁", fact: "Single-handedly dragged a boat to shore in S42, cementing himself as one of the most physically dominant players ever." },
-  { id: "kamilla",   name: "Kamilla Karthigesu",      seasons: "S44, S48",        tribe: "Kalo", emoji: "💼", fact: "Notable for low-visibility but high-impact game, surviving tribal after tribal without ever receiving a vote against her." },
-  { id: "mike",      name: "Mike White",              seasons: "S37",             tribe: "Kalo", emoji: "🎬", fact: "The writer/director of 'School of Rock' and 'The White Lotus' — and a legitimately great Survivor strategist." },
-  { id: "tiffany",   name: "Tiffany Ervin",           seasons: "S46",             tribe: "Kalo", emoji: "🔥", fact: "Survived being on the wrong side of nearly every vote in S46 through sheer social charm and idol luck." },
-  { id: "angelina",  name: "Angelina Keeley",         seasons: "S37",             tribe: "Vatu", emoji: "✈️", fact: "Famously negotiated her way into a jacket at Tribal Council — and made a fake idol out of a napkin." },
-  { id: "aubry",     name: "Aubry Bracco",            seasons: "S32, S34, S38",   tribe: "Vatu", emoji: "🦋", fact: "Lost Kaoh Rong by one jury vote after Michele flipped — one of the most debated finales ever." },
-  { id: "colby",     name: "Colby Donaldson",         seasons: "S2, S8, S20",     tribe: "Vatu", emoji: "🤠", fact: "Infamously took Tina to the finals instead of Keith in S2, costing himself the million dollars." },
-  { id: "genevieve", name: "Genevieve Mushaluk",      seasons: "S47",             tribe: "Vatu", emoji: "🌿", fact: "A corporate lawyer who dominated strategically, pulling off major blindsides and forming key alliances." },
-  { id: "kyle",      name: "Kyle Fraser",             seasons: "S48 (Winner)",    tribe: "Vatu", emoji: "🥊", fact: "Won S48 after successfully navigating a tribe that kept losing immunity — the ultimate underdog winner." },
-  { id: "q",         name: "Q Burdette",              seasons: "S46",             tribe: "Vatu", emoji: "⚡", fact: "Caused chaos in S46 by openly asking to be voted out at Tribal Council — then changed his mind mid-vote." },
-  { id: "rizo",      name: "Rizo Velovic",            seasons: "S49",             tribe: "Vatu", emoji: "🎯", fact: "Played a quietly devastating strategic game in S49, orchestrating multiple blindsides without getting any blood on his hands." },
-  { id: "stephenie", name: "Stephenie LaGrossa",      seasons: "S10, S11, S20",   tribe: "Vatu", emoji: "💪", fact: "Sole remaining member of the Ulong tribe in Palau — the only tribe in history to lose every single immunity challenge." },
+  // ── CILA (post-swap) ──────────────────────────────────────────────────────
+  { id: "charlie",   name: "Charlie Davis",           seasons: "S46",             tribe: "Cila", originalTribe: "Kalo", emoji: "🎭", fact: "A law student who lost the S46 finale by one jury vote after being blindsided by Q's unpredictable game." },
+  { id: "cirie",     name: "Cirie Fields",            seasons: "S12,S16,S20,S34", tribe: "Cila",                         emoji: "👑", fact: "Never won an individual immunity challenge in 4 seasons — yet made it deep every time purely on social mastery." },
+  { id: "dee",       name: "Dee Valladares",          seasons: "S45 (Winner)",    tribe: "Cila", originalTribe: "Kalo", emoji: "🏆", fact: "Won S45 by masterfully playing both sides of the merge while her closest ally Austin had no idea she was against him." },
+  { id: "jonathan",  name: "Jonathan Young",          seasons: "S42",             tribe: "Cila", originalTribe: "Kalo", emoji: "🦁", fact: "Single-handedly dragged a boat to shore in S42, cementing himself as one of the most physically dominant players ever." },
+  { id: "kamilla",   name: "Kamilla Karthigesu",      seasons: "S44, S48",        tribe: "Cila", originalTribe: "Kalo", emoji: "💼", fact: "Notable for low-visibility but high-impact game, surviving tribal after tribal without ever receiving a vote against her." },
+  { id: "rick",      name: "Rick Devens",             seasons: "S38",             tribe: "Cila",                         emoji: "📺", fact: "Was voted out, came back from Edge of Extinction, found 2 idols, and nearly won — all while being a local news anchor." },
+  { id: "rizo",      name: "Rizo Velovic",            seasons: "S49",             tribe: "Cila", originalTribe: "Vatu", emoji: "🎯", fact: "Played a quietly devastating strategic game in S49, orchestrating multiple blindsides without getting any blood on his hands." },
+  // ── KALO (post-swap) ──────────────────────────────────────────────────────
+  { id: "aubry",     name: "Aubry Bracco",            seasons: "S32, S34, S38",   tribe: "Kalo", originalTribe: "Vatu", emoji: "🦋", fact: "Lost Kaoh Rong by one jury vote after Michele flipped — one of the most debated finales ever." },
+  { id: "chrissy",   name: "Chrissy Hofbeck",         seasons: "S35",             tribe: "Kalo",                         emoji: "🧮", fact: "An actuary who used math and probability to calculate her way to the final 3 in Heroes vs. Healers vs. Hustlers." },
+  { id: "coach",     name: "Coach Wade",              seasons: "S18, S20, S23",   tribe: "Kalo",                         emoji: "🐉", fact: "Self-proclaimed 'Dragon Slayer' who built a cult-like alliance in South Pacific and nearly won with it." },
+  { id: "colby",     name: "Colby Donaldson",         seasons: "S2, S8, S20",     tribe: "Kalo", originalTribe: "Vatu", emoji: "🤠", fact: "Infamously took Tina to the finals instead of Keith in S2, costing himself the million dollars." },
+  { id: "genevieve", name: "Genevieve Mushaluk",      seasons: "S47",             tribe: "Kalo", originalTribe: "Vatu", emoji: "🌿", fact: "A corporate lawyer who dominated strategically, pulling off major blindsides and forming key alliances." },
+  { id: "joe",       name: "Joe Hunter",              seasons: "S48",             tribe: "Kalo", originalTribe: "Cila", emoji: "🦅", fact: "A firefighter whose social game kept him safe deep into S48 despite being a physical threat." },
+  { id: "tiffany",   name: "Tiffany Ervin",           seasons: "S46",             tribe: "Kalo",                         emoji: "🔥", fact: "Survived being on the wrong side of nearly every vote in S46 through sheer social charm and idol luck." },
+  // ── VATU (post-swap) ──────────────────────────────────────────────────────
+  { id: "angelina",  name: "Angelina Keeley",         seasons: "S37",             tribe: "Vatu",                         emoji: "✈️", fact: "Famously negotiated her way into a jacket at Tribal Council — and made a fake idol out of a napkin." },
+  { id: "christian", name: "Christian Hubicki",       seasons: "S37",             tribe: "Vatu", originalTribe: "Cila", emoji: "🤓", fact: "PhD roboticist who solved puzzles faster than anyone in S37 history." },
+  { id: "emily",     name: "Emily Flippen",           seasons: "S45",             tribe: "Vatu", originalTribe: "Cila", emoji: "📈", fact: "Started as the most disliked player on her tribe and pulled off one of the best redemption arcs ever." },
+  { id: "mike",      name: "Mike White",              seasons: "S37",             tribe: "Vatu", originalTribe: "Kalo", emoji: "🎬", fact: "The writer/director of 'School of Rock' and 'The White Lotus' — and a legitimately great Survivor strategist." },
+  { id: "ozzy",      name: "Ozzy Lusth",              seasons: "S13,S16,S23,S34", tribe: "Vatu", originalTribe: "Cila", emoji: "🌊", fact: "Holds the record for most individual immunity wins in a single season (5) and is considered the greatest challenge beast ever." },
+  { id: "q",         name: "Q Burdette",              seasons: "S46",             tribe: "Vatu",                         emoji: "⚡", fact: "Caused chaos in S46 by openly asking to be voted out at Tribal Council — then changed his mind mid-vote." },
+  { id: "stephenie", name: "Stephenie LaGrossa",      seasons: "S10, S11, S20",   tribe: "Vatu",                         emoji: "💪", fact: "Sole remaining member of the Ulong tribe in Palau — the only tribe in history to lose every single immunity challenge." },
+  // ── NO SWAP (kept original tribe) ────────────────────────────────────────
+  { id: "jenna",     name: "Jenna Lewis-Dougherty",  seasons: "S1, S8",          tribe: "Cila",                         emoji: "🌺", fact: "One of the original Borneo castaways — was on the very first season of Survivor ever aired." },
+  { id: "kyle",      name: "Kyle Fraser",             seasons: "S48 (Winner)",    tribe: "Vatu",                         emoji: "🥊", fact: "Won S48 after successfully navigating a tribe that kept losing immunity — the ultimate underdog winner." },
+  { id: "savannah",  name: "Savannah Louie",          seasons: "S49 (Winner)",    tribe: "Cila",                         emoji: "⭐", fact: "Won S49 without ever receiving a vote at Tribal Council the entire game." },
 ];
 
 const TRIBE_COLORS = {
@@ -979,6 +983,15 @@ export default function SurvivorFantasy() {
                               <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#666", marginBottom:4}}>
                                 {c.seasons}
                               </div>
+                              {c.originalTribe && (
+                                <div style={{display:"inline-flex", alignItems:"center", gap:4, marginBottom:4,
+                                  background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.12)",
+                                  borderRadius:20, padding:"2px 8px"}}>
+                                  <span style={{fontSize:9, color:"#888", fontFamily:"'Lato',sans-serif", letterSpacing:1}}>
+                                    🔀 Pre-swap: {c.originalTribe}
+                                  </span>
+                                </div>
+                              )}
                               {c.fact && (
                                 <div style={{fontFamily:"'Lato',sans-serif", fontSize:10, color:"#8a7a5a", lineHeight:1.5, fontStyle:"italic", marginBottom:8}}>
                                   {c.fact}
