@@ -224,7 +224,7 @@ function defaultCastawayScores() {
 function defaultFantasyPlayers() { return []; }
 
 // ─── SIDE BETS MODAL ─────────────────────────────────────────────────────────
-function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, onSave, onClose }) {
+function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, castawayScores, onSave, onClose }) {
   const [picks, setPicks] = useState(sideBets[weekKey] || {});
   return (
     <div className="modal-bg" onClick={onClose}>
@@ -252,7 +252,7 @@ function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, onS
                 <option value="">— No bet —</option>
                 {["Cila","Kalo","Vatu"].map(tribe => (
                   <optgroup key={tribe} label={`Tribe ${tribe}`}>
-                    {CAST.filter(c => c.tribe === tribe).sort((a,b) => a.name.localeCompare(b.name)).map(c => (
+                    {CAST.filter(c => c.tribe === tribe && !castawayScores[c.id]?.eliminated).sort((a,b) => a.name.localeCompare(b.name)).map(c => (
                       <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
                     ))}
                   </optgroup>
@@ -1086,7 +1086,7 @@ export default function SurvivorFantasy() {
                                       }} style={{fontSize:10, padding:"2px 4px", marginLeft:2}}>
                                         {["Cila","Kalo","Vatu"].map(tribe => (
                                           <optgroup key={tribe} label={tribe}>
-                                            {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
+                                            {CAST.filter(c=>c.tribe===tribe && !castawayScores[c.id]?.eliminated).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
                                               <option key={c.id} value={c.id}>{c.name}</option>
                                             ))}
                                           </optgroup>
@@ -1106,7 +1106,7 @@ export default function SurvivorFantasy() {
                                       <option value="">— Pick castaway —</option>
                                       {["Cila","Kalo","Vatu"].map(tribe => (
                                         <optgroup key={tribe} label={tribe}>
-                                          {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
+                                          {CAST.filter(c=>c.tribe===tribe && !castawayScores[c.id]?.eliminated).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
                                             <option key={c.id} value={c.id}>{c.name}</option>
                                           ))}
                                         </optgroup>
@@ -1317,6 +1317,7 @@ export default function SurvivorFantasy() {
             fantasyPlayers={fantasyPlayers}
             photos={photos}
             sideBets={sideBets}
+            castawayScores={castawayScores}
             onSave={(newBets) => { setSideBets(newBets); saveSideBetsToDB(newBets); setSideBetsModal(false); showToast(`Episode ${nextWeek} bets saved!`); }}
             onClose={() => setSideBetsModal(false)}
           />
