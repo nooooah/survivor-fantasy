@@ -652,6 +652,7 @@ export default function SurvivorFantasy() {
           {key:"leaderboard", label:"🏆 Leaderboard"},
           {key:"castaways",   label:"🗿 Castaways"},
           {key:"fantasy",     label:"👥 Fantasy Players"},
+          {key:"sidebets",    label:"🎰 Side Bets"},
           {key:"scoring",     label:"📋 Scoring Guide"},
         ].map(t => (
           <button key={t.key} className={`tab-btn${tab===t.key?" active":""}`}
@@ -783,148 +784,6 @@ export default function SurvivorFantasy() {
                 ))}
               </div>
 
-            </div>
-
-            {/* ── SIDE BETS ── */}
-            <div style={{marginTop:28}}>
-              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14}}>
-                <h2 style={{fontSize:13, letterSpacing:4, color:"#D97706", margin:0, fontFamily:"'Lato',sans-serif", textTransform:"uppercase"}}>
-                  🎰 Weekly Side Bets
-                </h2>
-                <button className="btn" onClick={() => setSideBetsModal(true)}
-                  style={{background:"linear-gradient(135deg,#065F46,#059669)", color:"#fff", padding:"7px 14px", fontSize:11}}>
-                  + New Week
-                </button>
-              </div>
-              {Object.keys(sideBets).filter(k => k !== "resolved").length === 0 ? (
-                <div style={{textAlign:"center", padding:"24px 16px", color:"#444", fontFamily:"'Lato',sans-serif",
-                  fontSize:12, border:"1px dashed rgba(255,215,0,.1)", borderRadius:10, lineHeight:1.8}}>
-                  No side bets yet. Click "+ New Week" to let players predict who gets eliminated!
-                </div>
-              ) : (
-                <div style={{display:"flex", flexDirection:"column", gap:12}}>
-                  {Object.keys(sideBets).filter(k => k !== "resolved").sort().map(week => {
-                    const bets = sideBets[week] || {};
-                    const resolved = sideBets.resolved?.[week];
-                    const weekNum = week.replace("week","");
-                    return (
-                      <div key={week} className="card" style={{padding:"14px 16px"}}>
-                        <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, gap:8, flexWrap:"wrap"}}>
-                          <div style={{fontWeight:700, fontSize:14}}>Episode {weekNum}</div>
-                          <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
-                            {resolved ? (
-                              <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
-                                <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#22c55e"}}>
-                                  ✓ Eliminated: <strong>{CAST.find(c=>c.id===resolved)?.name || resolved}</strong>
-                                </div>
-                                <button className="btn" onClick={() => {
-                                  const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}) }};
-                                  delete newSideBets.resolved[week];
-                                  setSideBets(newSideBets);
-                                  saveSideBetsToDB(newSideBets);
-                                  showToast("Result cleared — you can set a new one.");
-                                }} style={{background:"rgba(255,215,0,.08)", color:"#D97706", border:"1px solid rgba(255,215,0,.3)", padding:"3px 8px", fontSize:10}}>
-                                  ✏️ Edit
-                                </button>
-                              </div>
-                            ) : (
-                              <select onChange={e => {
-                                if (!e.target.value) return;
-                                const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}), [week]: e.target.value }};
-                                setSideBets(newSideBets);
-                                saveSideBetsToDB(newSideBets);
-                                showToast("Result saved! Points awarded. 🎉");
-                              }} defaultValue="" style={{fontSize:11, padding:"5px 8px"}}>
-                                <option value="">Reveal result...</option>
-                                {CAST.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                              </select>
-                            )}
-                            {!resolved && (
-                              <button className="btn" onClick={() => {
-                                const newSideBets = { ...sideBets };
-                                delete newSideBets[week];
-                                setSideBets(newSideBets);
-                                saveSideBetsToDB(newSideBets);
-                              }} style={{background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"4px 8px", fontSize:10}}>
-                                Delete
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {/* Player bets */}
-                        <div style={{display:"flex", flexWrap:"wrap", gap:8}}>
-                          {fantasyPlayers.map(p => {
-                            const pick = bets[p.id];
-                            const cast = CAST.find(c => c.id === pick);
-                            const correct = resolved && pick === resolved;
-                            const wrong = resolved && pick && pick !== resolved;
-                            return (
-                              <div key={p.id} style={{
-                                background: correct?"rgba(34,197,94,.12)":wrong?"rgba(239,68,68,.08)":"rgba(255,255,255,.04)",
-                                border:`1px solid ${correct?"#22c55e44":wrong?"#ef444433":"rgba(255,215,0,.1)"}`,
-                                borderRadius:8, padding:"8px 12px", fontFamily:"'Lato',sans-serif",
-                                display:"flex", alignItems:"center", gap:8
-                              }}>
-                                <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={24} />
-                                <div>
-                                  <div style={{fontSize:11, color:"#888", marginBottom:4}}>{p.name}</div>
-                                  {pick && cast ? (
-                                    <div style={{display:"flex", alignItems:"center", gap:5, flexWrap:"wrap"}}>
-                                      <Avatar id={cast.id} name={cast.name} emoji={cast.emoji} tribe={cast.tribe} photos={photos} size={18} />
-                                      <span style={{color: correct?"#22c55e":wrong?"#ef4444":"#c4a97a", fontWeight:700, fontSize:11}}>
-                                        {cast.name.split(" ")[0]}
-                                      </span>
-                                      {correct && <span style={{color:"#22c55e", fontSize:11}}>+3 pts ✓</span>}
-                                      {wrong && <span style={{color:"#ef4444", fontSize:11}}>✗</span>}
-                                      {!resolved && (
-                                        <select value={pick} onChange={e => {
-                                          const newSideBets = { ...sideBets, [week]: { ...bets, [p.id]: e.target.value }};
-                                          setSideBets(newSideBets);
-                                          saveSideBetsToDB(newSideBets);
-                                          showToast(`${p.name}'s pick updated!`);
-                                        }} style={{fontSize:10, padding:"2px 4px", marginLeft:2}}>
-                                          {["Cila","Kalo","Vatu"].map(tribe => (
-                                            <optgroup key={tribe} label={tribe}>
-                                              {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                              ))}
-                                            </optgroup>
-                                          ))}
-                                        </select>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    !resolved ? (
-                                      <select value="" onChange={e => {
-                                        if (!e.target.value) return;
-                                        const newSideBets = { ...sideBets, [week]: { ...bets, [p.id]: e.target.value }};
-                                        setSideBets(newSideBets);
-                                        saveSideBetsToDB(newSideBets);
-                                        showToast(`${p.name}'s pick saved!`);
-                                      }} style={{fontSize:10, padding:"2px 4px"}}>
-                                        <option value="">— Pick castaway —</option>
-                                        {["Cila","Kalo","Vatu"].map(tribe => (
-                                          <optgroup key={tribe} label={tribe}>
-                                            {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
-                                              <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                          </optgroup>
-                                        ))}
-                                      </select>
-                                    ) : (
-                                      <span style={{color:"#444", fontSize:11}}>No bet placed</span>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
           </div>
@@ -1122,6 +981,151 @@ export default function SurvivorFantasy() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── SIDE BETS TAB ── */}
+        {tab === "sidebets" && (
+          <div style={{animation:"fadeIn .3s"}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20}}>
+              <h2 style={{fontSize:16, letterSpacing:4, color:"#D97706", margin:0, fontFamily:"'Lato',sans-serif", textTransform:"uppercase"}}>
+                🎰 Weekly Side Bets
+              </h2>
+              <button className="btn" onClick={() => setSideBetsModal(true)}
+                style={{background:"linear-gradient(135deg,#065F46,#059669)", color:"#fff", padding:"10px 16px", fontSize:12}}>
+                + New Week
+              </button>
+            </div>
+            {Object.keys(sideBets).filter(k => k !== "resolved").length === 0 ? (
+              <div style={{textAlign:"center", padding:"40px 16px", color:"#444", fontFamily:"'Lato',sans-serif",
+                fontSize:12, border:"1px dashed rgba(255,215,0,.1)", borderRadius:10, lineHeight:1.8}}>
+                <div style={{fontSize:32, marginBottom:10}}>🎰</div>
+                No side bets yet. Click "+ New Week" to let players predict who gets eliminated!
+              </div>
+            ) : (
+              <div style={{display:"flex", flexDirection:"column", gap:12}}>
+                {Object.keys(sideBets).filter(k => k !== "resolved").sort().map(week => {
+                  const bets = sideBets[week] || {};
+                  const resolved = sideBets.resolved?.[week];
+                  const weekNum = week.replace("week","");
+                  return (
+                    <div key={week} className="card" style={{padding:"14px 16px"}}>
+                      <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, gap:8, flexWrap:"wrap"}}>
+                        <div style={{fontWeight:700, fontSize:14}}>Episode {weekNum}</div>
+                        <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
+                          {resolved ? (
+                            <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
+                              <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#22c55e"}}>
+                                ✓ Eliminated: <strong>{CAST.find(c=>c.id===resolved)?.name || resolved}</strong>
+                              </div>
+                              <button className="btn" onClick={() => {
+                                const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}) }};
+                                delete newSideBets.resolved[week];
+                                setSideBets(newSideBets);
+                                saveSideBetsToDB(newSideBets);
+                                showToast("Result cleared — you can set a new one.");
+                              }} style={{background:"rgba(255,215,0,.08)", color:"#D97706", border:"1px solid rgba(255,215,0,.3)", padding:"3px 8px", fontSize:10}}>
+                                ✏️ Edit
+                              </button>
+                            </div>
+                          ) : (
+                            <select onChange={e => {
+                              if (!e.target.value) return;
+                              const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}), [week]: e.target.value }};
+                              setSideBets(newSideBets);
+                              saveSideBetsToDB(newSideBets);
+                              showToast("Result saved! Points awarded. 🎉");
+                            }} defaultValue="" style={{fontSize:11, padding:"5px 8px"}}>
+                              <option value="">Reveal result...</option>
+                              {CAST.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                          )}
+                          {!resolved && (
+                            <button className="btn" onClick={() => {
+                              const newSideBets = { ...sideBets };
+                              delete newSideBets[week];
+                              setSideBets(newSideBets);
+                              saveSideBetsToDB(newSideBets);
+                            }} style={{background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"4px 8px", fontSize:10}}>
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {/* Player bets */}
+                      <div style={{display:"flex", flexWrap:"wrap", gap:8}}>
+                        {fantasyPlayers.map(p => {
+                          const pick = bets[p.id];
+                          const cast = CAST.find(c => c.id === pick);
+                          const correct = resolved && pick === resolved;
+                          const wrong = resolved && pick && pick !== resolved;
+                          return (
+                            <div key={p.id} style={{
+                              background: correct?"rgba(34,197,94,.12)":wrong?"rgba(239,68,68,.08)":"rgba(255,255,255,.04)",
+                              border:`1px solid ${correct?"#22c55e44":wrong?"#ef444433":"rgba(255,215,0,.1)"}`,
+                              borderRadius:8, padding:"8px 12px", fontFamily:"'Lato',sans-serif",
+                              display:"flex", alignItems:"center", gap:8
+                            }}>
+                              <Avatar id={p.id} name={p.name} emoji="👤" photos={photos} size={24} />
+                              <div>
+                                <div style={{fontSize:11, color:"#888", marginBottom:4}}>{p.name}</div>
+                                {pick && cast ? (
+                                  <div style={{display:"flex", alignItems:"center", gap:5, flexWrap:"wrap"}}>
+                                    <Avatar id={cast.id} name={cast.name} emoji={cast.emoji} tribe={cast.tribe} photos={photos} size={18} />
+                                    <span style={{color: correct?"#22c55e":wrong?"#ef4444":"#c4a97a", fontWeight:700, fontSize:11}}>
+                                      {cast.name.split(" ")[0]}
+                                    </span>
+                                    {correct && <span style={{color:"#22c55e", fontSize:11}}>+3 pts ✓</span>}
+                                    {wrong && <span style={{color:"#ef4444", fontSize:11}}>✗</span>}
+                                    {!resolved && (
+                                      <select value={pick} onChange={e => {
+                                        const newSideBets = { ...sideBets, [week]: { ...bets, [p.id]: e.target.value }};
+                                        setSideBets(newSideBets);
+                                        saveSideBetsToDB(newSideBets);
+                                        showToast(`${p.name}'s pick updated!`);
+                                      }} style={{fontSize:10, padding:"2px 4px", marginLeft:2}}>
+                                        {["Cila","Kalo","Vatu"].map(tribe => (
+                                          <optgroup key={tribe} label={tribe}>
+                                            {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
+                                              <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                          </optgroup>
+                                        ))}
+                                      </select>
+                                    )}
+                                  </div>
+                                ) : (
+                                  !resolved ? (
+                                    <select value="" onChange={e => {
+                                      if (!e.target.value) return;
+                                      const newSideBets = { ...sideBets, [week]: { ...bets, [p.id]: e.target.value }};
+                                      setSideBets(newSideBets);
+                                      saveSideBetsToDB(newSideBets);
+                                      showToast(`${p.name}'s pick saved!`);
+                                    }} style={{fontSize:10, padding:"2px 4px"}}>
+                                      <option value="">— Pick castaway —</option>
+                                      {["Cila","Kalo","Vatu"].map(tribe => (
+                                        <optgroup key={tribe} label={tribe}>
+                                          {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                          ))}
+                                        </optgroup>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <span style={{color:"#444", fontSize:11}}>No bet placed</span>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
