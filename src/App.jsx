@@ -422,7 +422,7 @@ function PasscodeGate({ onUnlock }) {
 
 export default function SurvivorFantasy() {
   const [unlocked, setUnlocked] = useState(() => localStorage.getItem("survivor50_auth") === "true");
-  const [tab, setTab] = useState("leaderboard");
+  const [tab, setTab] = useState("sidebets");
   const [castawayScores, setCastawayScores] = useState(defaultCastawayScores());
   const [fantasyPlayers, setFantasyPlayers] = useState(defaultFantasyPlayers());
   const [photos, setPhotos] = useState({});
@@ -649,10 +649,10 @@ export default function SurvivorFantasy() {
       {/* TABS */}
       <div style={{display:"flex", justifyContent:"center", gap:8, padding:"16px 20px", flexWrap:"wrap"}}>
         {[
+          {key:"sidebets",    label:"🎰 Side Bets"},
           {key:"leaderboard", label:"🏆 Leaderboard"},
           {key:"castaways",   label:"🗿 Castaways"},
           {key:"fantasy",     label:"👥 Fantasy Players"},
-          {key:"sidebets",    label:"🎰 Side Bets"},
           {key:"scoring",     label:"📋 Scoring Guide"},
         ].map(t => (
           <button key={t.key} className={`tab-btn${tab===t.key?" active":""}`}
