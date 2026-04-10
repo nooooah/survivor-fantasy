@@ -226,6 +226,7 @@ function defaultFantasyPlayers() { return []; }
 // ─── SIDE BETS MODAL ─────────────────────────────────────────────────────────
 function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, castawayScores, onSave, onClose }) {
   const [picks, setPicks] = useState(sideBets[weekKey] || {});
+  const [bootCount, setBootCount] = useState(sideBets[weekKey + "_bootCount"] || 1);
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
@@ -235,6 +236,18 @@ function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, cas
         <p style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginTop:0, marginBottom:18}}>
           Each player picks who they think will be eliminated this episode. Correct guess = +3 pts.
         </p>
+        {/* Boot count selector */}
+        <div style={{marginBottom:18}}>
+          <label style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", display:"block", marginBottom:6, letterSpacing:1}}>
+            HOW MANY CASTAWAYS VOTED OUT THIS EPISODE?
+          </label>
+          <select value={bootCount} onChange={e => setBootCount(Number(e.target.value))}
+            style={{width:"100%", fontSize:12, padding:"7px 10px"}}>
+            <option value={1}>1 castaway</option>
+            <option value={2}>2 castaways</option>
+            <option value={3}>3 castaways</option>
+          </select>
+        </div>
         <div style={{display:"flex", flexDirection:"column", gap:14, marginBottom:20}}>
           {fantasyPlayers.map(p => (
             <div key={p.id}>
@@ -262,7 +275,7 @@ function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, cas
           ))}
         </div>
         <div style={{display:"flex", gap:10}}>
-          <button className="btn" onClick={() => onSave({ ...sideBets, [weekKey]: picks })}
+          <button className="btn" onClick={() => onSave({ ...sideBets, [weekKey]: picks, [weekKey + "_bootCount"]: bootCount })}
             style={{flex:1, background:"linear-gradient(135deg,#065F46,#059669)", color:"#fff", padding:"12px", fontSize:13}}>
             Save Bets ✓
           </button>
@@ -550,9 +563,12 @@ export default function SurvivorFantasy() {
   const getSideBetPoints = (playerId) => {
     let pts = 0;
     Object.keys(sideBets.resolved || {}).forEach(week => {
-      const eliminated = sideBets.resolved[week];
+      const eliminated = sideBets.resolved[week]; // now an array
       const bets = sideBets[week] || {};
-      if (bets[playerId] === eliminated) pts += 3;
+      const pick = bets[playerId];
+      if (pick && Array.isArray(eliminated) && eliminated.includes(pick)) pts += 3;
+      // backwards compat: old string format
+      if (pick && typeof eliminated === "string" && pick === eliminated) pts += 3;
     });
     return pts;
   };
@@ -1004,19 +1020,27 @@ export default function SurvivorFantasy() {
               </div>
             ) : (
               <div style={{display:"flex", flexDirection:"column", gap:12}}>
-                {Object.keys(sideBets).filter(k => k !== "resolved").sort().map(week => {
+                {Object.keys(sideBets).filter(k => k !== "resolved" && !k.endsWith("_bootCount")).sort().map(week => {
                   const bets = sideBets[week] || {};
-                  const resolved = sideBets.resolved?.[week];
+                  const resolved = sideBets.resolved?.[week]; // array or undefined
+                  const resolvedArr = Array.isArray(resolved) ? resolved : (resolved ? [resolved] : []);
+                  const bootCount = sideBets[week + "_bootCount"] || 1;
+                  const fullyResolved = resolvedArr.length >= bootCount;
                   const weekNum = week.replace("week","");
                   return (
                     <div key={week} className="card" style={{padding:"14px 16px"}}>
                       <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, gap:8, flexWrap:"wrap"}}>
-                        <div style={{fontWeight:700, fontSize:14}}>Episode {weekNum}</div>
+                        <div>
+                          <div style={{fontWeight:700, fontSize:14}}>Episode {weekNum}</div>
+                          <div style={{fontFamily:"'Lato',sans-serif", fontSize:11, color:"#888", marginTop:2}}>
+                            {bootCount} castaway{bootCount > 1 ? "s" : ""} voted out
+                          </div>
+                        </div>
                         <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
-                          {resolved ? (
+                          {fullyResolved ? (
                             <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
                               <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#22c55e"}}>
-                                ✓ Eliminated: <strong>{CAST.find(c=>c.id===resolved)?.name || resolved}</strong>
+                                ✓ {resolvedArr.map(id => CAST.find(c=>c.id===id)?.name || id).join(", ")}
                               </div>
                               <button className="btn" onClick={() => {
                                 const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}) }};
@@ -1029,21 +1053,31 @@ export default function SurvivorFantasy() {
                               </button>
                             </div>
                           ) : (
-                            <select onChange={e => {
-                              if (!e.target.value) return;
-                              const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}), [week]: e.target.value }};
-                              setSideBets(newSideBets);
-                              saveSideBetsToDB(newSideBets);
-                              showToast("Result saved! Points awarded. 🎉");
-                            }} defaultValue="" style={{fontSize:11, padding:"5px 8px"}}>
-                              <option value="">Reveal result...</option>
-                              {CAST.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
+                            <div style={{display:"flex", flexDirection:"column", gap:6}}>
+                              {Array.from({length: bootCount}).map((_, idx) => (
+                                <select key={idx}
+                                  value={resolvedArr[idx] || ""}
+                                  onChange={e => {
+                                    if (!e.target.value) return;
+                                    const newArr = [...resolvedArr];
+                                    newArr[idx] = e.target.value;
+                                    const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}), [week]: newArr }};
+                                    setSideBets(newSideBets);
+                                    saveSideBetsToDB(newSideBets);
+                                    if (newArr.filter(Boolean).length >= bootCount) showToast("Result saved! Points awarded. 🎉");
+                                  }}
+                                  style={{fontSize:11, padding:"5px 8px"}}>
+                                  <option value="">Boot #{idx+1}: Reveal...</option>
+                                  {CAST.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                              ))}
+                            </div>
                           )}
-                          {!resolved && (
+                          {!fullyResolved && (
                             <button className="btn" onClick={() => {
                               const newSideBets = { ...sideBets };
                               delete newSideBets[week];
+                              delete newSideBets[week + "_bootCount"];
                               setSideBets(newSideBets);
                               saveSideBetsToDB(newSideBets);
                             }} style={{background:"rgba(239,68,68,.15)", color:"#ef4444", border:"1px solid #ef4444", padding:"4px 8px", fontSize:10}}>
@@ -1057,8 +1091,8 @@ export default function SurvivorFantasy() {
                         {fantasyPlayers.map(p => {
                           const pick = bets[p.id];
                           const cast = CAST.find(c => c.id === pick);
-                          const correct = resolved && pick === resolved;
-                          const wrong = resolved && pick && pick !== resolved;
+                          const correct = fullyResolved && pick && resolvedArr.includes(pick);
+                          const wrong = fullyResolved && pick && !resolvedArr.includes(pick);
                           return (
                             <div key={p.id} style={{
                               background: correct?"rgba(34,197,94,.12)":wrong?"rgba(239,68,68,.08)":"rgba(255,255,255,.04)",
@@ -1077,7 +1111,7 @@ export default function SurvivorFantasy() {
                                     </span>
                                     {correct && <span style={{color:"#22c55e", fontSize:11}}>+3 pts ✓</span>}
                                     {wrong && <span style={{color:"#ef4444", fontSize:11}}>✗</span>}
-                                    {!resolved && (
+                                    {!fullyResolved && (
                                       <select value={pick} onChange={e => {
                                         const newSideBets = { ...sideBets, [week]: { ...bets, [p.id]: e.target.value }};
                                         setSideBets(newSideBets);
@@ -1095,7 +1129,7 @@ export default function SurvivorFantasy() {
                                     )}
                                   </div>
                                 ) : (
-                                  !resolved ? (
+                                  !fullyResolved ? (
                                     <select value="" onChange={e => {
                                       if (!e.target.value) return;
                                       const newSideBets = { ...sideBets, [week]: { ...bets, [p.id]: e.target.value }};
