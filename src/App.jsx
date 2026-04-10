@@ -1353,7 +1353,7 @@ export default function SurvivorFantasy() {
 
       {/* ── SIDE BETS MODAL ── */}
       {sideBetsModal && (() => {
-        const existingWeeks = Object.keys(sideBets).filter(k => k !== "resolved");
+        const existingWeeks = Object.keys(sideBets).filter(k => k !== "resolved" && !k.endsWith("_bootCount"));
         const nextWeek = existingWeeks.length + 1;
         const weekKey = `week${nextWeek}`;
         return (
