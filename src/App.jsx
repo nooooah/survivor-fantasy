@@ -224,9 +224,8 @@ function defaultCastawayScores() {
 function defaultFantasyPlayers() { return []; }
 
 // ─── SIDE BETS MODAL ─────────────────────────────────────────────────────────
-function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, castawayScores, onSave, onClose }) {
+function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, onSave, onClose }) {
   const [picks, setPicks] = useState(sideBets[weekKey] || {});
-  const [bootCount, setBootCount] = useState(sideBets[weekKey + "_bootCount"] || 1);
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
@@ -236,18 +235,6 @@ function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, cas
         <p style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", marginTop:0, marginBottom:18}}>
           Each player picks who they think will be eliminated this episode. Correct guess = +3 pts.
         </p>
-        {/* Boot count selector */}
-        <div style={{marginBottom:18}}>
-          <label style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#888", display:"block", marginBottom:6, letterSpacing:1}}>
-            HOW MANY CASTAWAYS VOTED OUT THIS EPISODE?
-          </label>
-          <select value={bootCount} onChange={e => setBootCount(Number(e.target.value))}
-            style={{width:"100%", fontSize:12, padding:"7px 10px"}}>
-            <option value={1}>1 castaway</option>
-            <option value={2}>2 castaways</option>
-            <option value={3}>3 castaways</option>
-          </select>
-        </div>
         <div style={{display:"flex", flexDirection:"column", gap:14, marginBottom:20}}>
           {fantasyPlayers.map(p => (
             <div key={p.id}>
@@ -265,7 +252,7 @@ function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, cas
                 <option value="">— No bet —</option>
                 {["Cila","Kalo","Vatu"].map(tribe => (
                   <optgroup key={tribe} label={`Tribe ${tribe}`}>
-                    {CAST.filter(c => c.tribe === tribe && !castawayScores[c.id]?.eliminated).sort((a,b) => a.name.localeCompare(b.name)).map(c => (
+                    {CAST.filter(c => c.tribe === tribe).sort((a,b) => a.name.localeCompare(b.name)).map(c => (
                       <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
                     ))}
                   </optgroup>
@@ -275,7 +262,7 @@ function SideBetsModal({ weekKey, weekNum, fantasyPlayers, photos, sideBets, cas
           ))}
         </div>
         <div style={{display:"flex", gap:10}}>
-          <button className="btn" onClick={() => onSave({ ...sideBets, [weekKey]: picks, [weekKey + "_bootCount"]: bootCount })}
+          <button className="btn" onClick={() => onSave({ ...sideBets, [weekKey]: picks })}
             style={{flex:1, background:"linear-gradient(135deg,#065F46,#059669)", color:"#fff", padding:"12px", fontSize:13}}>
             Save Bets ✓
           </button>
@@ -1012,7 +999,7 @@ export default function SurvivorFantasy() {
                 + New Week
               </button>
             </div>
-            {Object.keys(sideBets).filter(k => k !== "resolved").length === 0 ? (
+            {Object.keys(sideBets).filter(k => k !== "resolved" && !k.endsWith("_bootCount")).length === 0 ? (
               <div style={{textAlign:"center", padding:"40px 16px", color:"#444", fontFamily:"'Lato',sans-serif",
                 fontSize:12, border:"1px dashed rgba(255,215,0,.1)", borderRadius:10, lineHeight:1.8}}>
                 <div style={{fontSize:32, marginBottom:10}}>🎰</div>
@@ -1022,22 +1009,65 @@ export default function SurvivorFantasy() {
               <div style={{display:"flex", flexDirection:"column", gap:12}}>
                 {Object.keys(sideBets).filter(k => k !== "resolved" && !k.endsWith("_bootCount")).sort().map(week => {
                   const bets = sideBets[week] || {};
-                  const resolved = sideBets.resolved?.[week]; // array or undefined
+                  const resolved = sideBets.resolved?.[week];
                   const resolvedArr = Array.isArray(resolved) ? resolved : (resolved ? [resolved] : []);
-                  const bootCount = sideBets[week + "_bootCount"] || 1;
-                  const fullyResolved = resolvedArr.length >= bootCount;
+                  const bootCount = sideBets[week + "_bootCount"] || 0;
+                  const fullyResolved = bootCount > 0 && resolvedArr.filter(Boolean).length >= bootCount;
                   const weekNum = week.replace("week","");
                   return (
                     <div key={week} className="card" style={{padding:"14px 16px"}}>
-                      <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, gap:8, flexWrap:"wrap"}}>
-                        <div>
-                          <div style={{fontWeight:700, fontSize:14}}>Episode {weekNum}</div>
-                          <div style={{fontFamily:"'Lato',sans-serif", fontSize:11, color:"#888", marginTop:2}}>
-                            {bootCount} castaway{bootCount > 1 ? "s" : ""} voted out
-                          </div>
-                        </div>
-                        <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
-                          {fullyResolved ? (
+                      {/* Episode header */}
+                      <div style={{display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:12, gap:8, flexWrap:"wrap"}}>
+                        <div style={{fontWeight:700, fontSize:14}}>Episode {weekNum}</div>
+                        <div style={{display:"flex", flexDirection:"column", gap:8, alignItems:"flex-end"}}>
+                          {/* Boot count selector */}
+                          {!fullyResolved && (
+                            <div style={{display:"flex", alignItems:"center", gap:8}}>
+                              <span style={{fontFamily:"'Lato',sans-serif", fontSize:11, color:"#888"}}>Boots this episode:</span>
+                              <select value={bootCount} onChange={e => {
+                                const n = Number(e.target.value);
+                                const newSideBets = { ...sideBets, [week + "_bootCount"]: n };
+                                setSideBets(newSideBets);
+                                saveSideBetsToDB(newSideBets);
+                              }} style={{fontSize:11, padding:"4px 8px"}}>
+                                <option value={0}>— Select —</option>
+                                <option value={1}>1</option>
+                                <option value={2}>2</option>
+                                <option value={3}>3</option>
+                              </select>
+                            </div>
+                          )}
+                          {/* Boot reveal dropdowns — appear once boot count is selected */}
+                          {bootCount > 0 && !fullyResolved && (
+                            <div style={{display:"flex", flexDirection:"column", gap:6}}>
+                              {Array.from({length: bootCount}).map((_, idx) => (
+                                <div key={idx} style={{display:"flex", alignItems:"center", gap:6}}>
+                                  <span style={{fontFamily:"'Lato',sans-serif", fontSize:11, color:"#888", whiteSpace:"nowrap"}}>Boot #{idx+1}:</span>
+                                  {resolvedArr[idx] ? (
+                                    <span style={{fontFamily:"'Lato',sans-serif", fontSize:11, color:"#22c55e", fontWeight:700}}>
+                                      ✓ {CAST.find(c=>c.id===resolvedArr[idx])?.name}
+                                    </span>
+                                  ) : (
+                                    <select value="" onChange={e => {
+                                      if (!e.target.value) return;
+                                      const newArr = [...resolvedArr];
+                                      newArr[idx] = e.target.value;
+                                      const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}), [week]: newArr }};
+                                      setSideBets(newSideBets);
+                                      saveSideBetsToDB(newSideBets);
+                                      if (newArr.filter(Boolean).length >= bootCount) showToast("All boots revealed! Points awarded. 🎉");
+                                      else showToast(`Boot #${idx+1} saved!`);
+                                    }} style={{fontSize:11, padding:"4px 8px"}}>
+                                      <option value="">Reveal...</option>
+                                      {CAST.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Fully resolved summary */}
+                          {fullyResolved && (
                             <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
                               <div style={{fontFamily:"'Lato',sans-serif", fontSize:12, color:"#22c55e"}}>
                                 ✓ {resolvedArr.map(id => CAST.find(c=>c.id===id)?.name || id).join(", ")}
@@ -1045,34 +1075,16 @@ export default function SurvivorFantasy() {
                               <button className="btn" onClick={() => {
                                 const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}) }};
                                 delete newSideBets.resolved[week];
+                                delete newSideBets[week + "_bootCount"];
                                 setSideBets(newSideBets);
                                 saveSideBetsToDB(newSideBets);
-                                showToast("Result cleared — you can set a new one.");
+                                showToast("Result cleared.");
                               }} style={{background:"rgba(255,215,0,.08)", color:"#D97706", border:"1px solid rgba(255,215,0,.3)", padding:"3px 8px", fontSize:10}}>
                                 ✏️ Edit
                               </button>
                             </div>
-                          ) : (
-                            <div style={{display:"flex", flexDirection:"column", gap:6}}>
-                              {Array.from({length: bootCount}).map((_, idx) => (
-                                <select key={idx}
-                                  value={resolvedArr[idx] || ""}
-                                  onChange={e => {
-                                    if (!e.target.value) return;
-                                    const newArr = [...resolvedArr];
-                                    newArr[idx] = e.target.value;
-                                    const newSideBets = { ...sideBets, resolved: { ...(sideBets.resolved||{}), [week]: newArr }};
-                                    setSideBets(newSideBets);
-                                    saveSideBetsToDB(newSideBets);
-                                    if (newArr.filter(Boolean).length >= bootCount) showToast("Result saved! Points awarded. 🎉");
-                                  }}
-                                  style={{fontSize:11, padding:"5px 8px"}}>
-                                  <option value="">Boot #{idx+1}: Reveal...</option>
-                                  {CAST.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                              ))}
-                            </div>
                           )}
+                          {/* Delete button */}
                           {!fullyResolved && (
                             <button className="btn" onClick={() => {
                               const newSideBets = { ...sideBets };
@@ -1120,7 +1132,7 @@ export default function SurvivorFantasy() {
                                       }} style={{fontSize:10, padding:"2px 4px", marginLeft:2}}>
                                         {["Cila","Kalo","Vatu"].map(tribe => (
                                           <optgroup key={tribe} label={tribe}>
-                                            {CAST.filter(c=>c.tribe===tribe && !castawayScores[c.id]?.eliminated).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
+                                            {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
                                               <option key={c.id} value={c.id}>{c.name}</option>
                                             ))}
                                           </optgroup>
@@ -1140,7 +1152,7 @@ export default function SurvivorFantasy() {
                                       <option value="">— Pick castaway —</option>
                                       {["Cila","Kalo","Vatu"].map(tribe => (
                                         <optgroup key={tribe} label={tribe}>
-                                          {CAST.filter(c=>c.tribe===tribe && !castawayScores[c.id]?.eliminated).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
+                                          {CAST.filter(c=>c.tribe===tribe).sort((a,b)=>a.name.localeCompare(b.name)).map(c => (
                                             <option key={c.id} value={c.id}>{c.name}</option>
                                           ))}
                                         </optgroup>
@@ -1351,7 +1363,6 @@ export default function SurvivorFantasy() {
             fantasyPlayers={fantasyPlayers}
             photos={photos}
             sideBets={sideBets}
-            castawayScores={castawayScores}
             onSave={(newBets) => { setSideBets(newBets); saveSideBetsToDB(newBets); setSideBetsModal(false); showToast(`Episode ${nextWeek} bets saved!`); }}
             onClose={() => setSideBetsModal(false)}
           />
