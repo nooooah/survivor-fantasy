@@ -1007,7 +1007,7 @@ export default function SurvivorFantasy() {
               </div>
             ) : (
               <div style={{display:"flex", flexDirection:"column", gap:12}}>
-                {Object.keys(sideBets).filter(k => k !== "resolved" && !k.endsWith("_bootCount")).sort().map(week => {
+                {Object.keys(sideBets).filter(k => k !== "resolved" && !k.endsWith("_bootCount")).sort((a, b) => Number(a.replace("week","")) - Number(b.replace("week",""))).map(week => {
                   const bets = sideBets[week] || {};
                   const resolved = sideBets.resolved?.[week];
                   const resolvedArr = Array.isArray(resolved) ? resolved : (resolved ? [resolved] : []);
